@@ -1,0 +1,29 @@
+{
+  "name": "supe",
+  "version": "0.0.1",
+  "description": "Erlang-inspired Process Supervision Library",
+  "main": "index.js",
+  "dependencies": {
+    "cjs-noticeboard": "0.0.7",
+    "merge-objects": "^1.0.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Akamaozu/node-supe.git"
+  },
+  "keywords": [
+    "erlang",
+    "supervisor",
+    "process"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Akamaozu/node-supe/issues"
+  },
+  "homepage": "https://github.com/Akamaozu/node-supe#readme"
+}
