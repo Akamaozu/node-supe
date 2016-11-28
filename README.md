@@ -25,7 +25,9 @@ var supe = require('supe'),
 
 ## Basic Config
 
-### Script Overcrash
+### Set Script Overcrash
+
+NOTE: By default supe does nothing when a script overcrashes. It will keep reviving even when the script over-crashes. See [Handling Overcrashes](#handling-overcrashes) for ways to deal with excessive crashes.  
 
 ```js
 
@@ -37,7 +39,7 @@ var supe = require('supe'),
 
 ```
 
-### Default Overcrash
+### Set Default Overcrash
 
 ```js
 
@@ -307,4 +309,69 @@ supe.mail.receive( function( envelope, ack ){
 // worker1 says 1
 // worker2 started
 // worker1 says 1
+```
+
+### Supervised Supervisors
+
+Supervised scripts can supervise other scripts.
+
+```js
+
+// inside supervisor.js
+
+var supe = require('supe'),
+    supervisor = supe();
+
+supervisor.start( 'worker', 'worker.js' );
+
+// inside worker.js
+
+var supe = require('supe'),
+    supervisor = supe();
+
+supervisor.start( 'subworker', 'sub-worker.js' );
+
+if( supe.supervised ){
+  
+  supe.mail.send( 'started a subworker' );
+}
+
+``` 
+
+## Tips
+
+### Handling Overcrashes
+
+#### 1. Crash the supervisor
+
+```js
+supervisor.noticeboard.watch( 'citizen-excessive-crash', 'crash-supervisor', function( msg ){
+  
+  var name = msg.notice;
+
+  throw new Error( name + ' crashed excessively' );
+});
+
+#### 1. Stop (and maybe restart) script
+
+```js
+supervisor.noticeboard.watch( 'citizen-excessive-crash', 'crash-supervisor', function( msg ){
+  
+  var name = msg.notice,
+      citizen = supe.get( name );
+
+  citizen.ref.exit();
+
+  // restart in 30 secs
+
+  setTimeout( function(){
+
+    supe.start( name );
+  
+  }, 30 * 1000 );
+
+  // you don't need to resupply the file parameter to start.
+  // Supe is already aware of the script, so it will simply restart it.
+  // its mailbox will remain intact this way.
+});
 ```
