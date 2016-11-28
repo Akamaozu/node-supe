@@ -351,8 +351,9 @@ supervisor.noticeboard.watch( 'citizen-excessive-crash', 'crash-supervisor', fun
 
   throw new Error( name + ' crashed excessively' );
 });
+```
 
-#### 1. Stop (and maybe restart) script
+#### 2. Stop (and maybe restart) script
 
 ```js
 supervisor.noticeboard.watch( 'citizen-excessive-crash', 'crash-supervisor', function( msg ){
