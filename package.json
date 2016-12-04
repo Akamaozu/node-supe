@@ -7,9 +7,14 @@
     "cjs-noticeboard": "0.0.7",
     "merge-objects": "^1.0.5"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "cover-child-process": "^0.1.7",
+    "coveralls": "^2.11.15",
+    "mocha": "^3.2.0",
+    "nyc": "^10.0.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "nyc node_modules/mocha/bin/_mocha"
   },
   "repository": {
     "type": "git",
