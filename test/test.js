@@ -212,18 +212,16 @@ describe('Supe Test Suite', function(){
     var supervisor;
     
     beforeEach( function(){
-      supervisor = supe();
+      supervisor = supe({ retries: 0 });
     });
 
-    it('sends a notice when a specific citizen shuts down', function( done ){
+    it('sends a citizen-specific notice when it shuts down', function( done ){
 
       this.timeout( 15000 );
       
       var detected_shutdown = false;
 
       supervisor.noticeboard.watch( 'one-time-logger-shutdown', 'do-assertions', function( msg ){
-
-        console.log( 'logger shut down' );
 
         detected_shutdown = true;
         
@@ -234,7 +232,36 @@ describe('Supe Test Suite', function(){
       supervisor.start( 'one-time-logger', './test/citizen/one-time-logger' );
     });
 
-    it('sends a notice when a specific citizen crashes', function( done ){
+    it('sends a general notice when any citizen shuts down', function( done ){
+
+      this.timeout( 15000 );
+      
+      var first_citizen_name = 'first-logger',
+          second_citizen_name = 'second-logger',
+          shutdowns_detected = 0;
+
+      supervisor.noticeboard.watch( 'citizen-shutdown', 'do-assertions', function( msg ){
+
+        shutdowns_detected += 1;
+
+        var details = msg.notice;
+
+        if( details.name !== second_citizen_name ) return;
+        
+        assert.equal( shutdowns_detected === 2, true, 'did not detect all citizen shutdowns' );
+        assert.equal( details.name === second_citizen_name, true, 'did not detect expected citizen shutdown' );
+        
+        done();
+      });
+
+      supervisor.start( first_citizen_name, './test/citizen/one-time-logger' );
+
+      setTimeout( function(){
+        supervisor.start( second_citizen_name, './test/citizen/one-time-logger' );
+      }, 2000 );
+    });
+
+    it('sends a citizen-specific notice on crash', function( done ){
 
       this.timeout( 10000 );
 
@@ -248,6 +275,35 @@ describe('Supe Test Suite', function(){
       });
 
       supervisor.start( 'one-time-crasher', './test/citizen/one-time-crasher', { retries: 0 } );
+    });
+
+    it('sends a general notice when any citizen crashes', function( done ){
+
+      this.timeout( 15000 );
+      
+      var first_citizen_name = 'first-crasher',
+          second_citizen_name = 'second-crasher',
+          crashes_detected = 0;
+
+      supervisor.noticeboard.watch( 'citizen-crashed', 'do-assertions', function( msg ){
+
+        crashes_detected += 1;
+
+        var details = msg.notice;
+
+        if( details.name !== second_citizen_name ) return;
+        
+        assert.equal( crashes_detected === 2, true, 'did not detect all citizen crashes' );
+        assert.equal( details.name === second_citizen_name, true, 'did not detect expected citizen crash' );
+        
+        done();
+      });
+
+      supervisor.start( first_citizen_name, './test/citizen/one-time-crasher' );
+
+      setTimeout( function(){
+        supervisor.start( second_citizen_name, './test/citizen/one-time-crasher' );
+      }, 2000 );
     });
 
     it('sends a notice when it receives mail from a citizen', function( done ){
