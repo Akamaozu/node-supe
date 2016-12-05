@@ -48,8 +48,14 @@ describe('Supe Test Suite', function(){
 
     describe('Supervisor.start', function(){
       
-      var supervisor = supe(),
-          new_process = supervisor.start( 'logger', './test/citizen/interval-logger' );
+      var supervisor,
+          new_process; 
+
+      beforeEach( function(){
+
+        supervisor = supe();
+        new_process = supervisor.start( 'logger', './test/citizen/interval-logger' );
+      });
 
       it('returns an object (citizen)', function( done ){
 
@@ -120,23 +126,23 @@ describe('Supe Test Suite', function(){
 
       it('will restart a previously-started citizen', function( done ){
 
-        this.timeout( 12000 );
+        this.timeout( 10000 );
 
-        var first_start = supervisor.start( 'one-time-logger', './test/citizen/one-time-logger' ),
-            first_pid = first_start.ref.pid;
+        supervisor.noticeboard.watch( 'citizen-shutdown', 'start-tests', function( msg ){
 
-        setTimeout( function(){
-
-          var second_start = supervisor.start( 'one-time-logger' ),
-              second_pid = second_start.ref.pid;
+          var second_start = supervisor.start( 'one-time-logger' );
 
           assert.equal( Object.prototype.toString.call( second_start ) === '[object Object]', true, 'second start attempt did not return an object as expected' );
           assert.equal( second_start.hasOwnProperty( 'ref' ), true, 'second start attempt did not return with a process reference (property "ref")' );
-          assert.equal( first_pid !== second_pid || first_start.ref !== second_start.ref, true, 'first and second start are the same instance' );
+          assert.equal( first_pid !== second_start.ref.pid || first_start.ref !== second_start.ref, true, 'first and second start are the same instance' );
+
+          supervisor.noticeboard.ignore( 'citizen-shutdown', 'start-tests' );
 
           done();
+        });
 
-        }, 8000 );
+        var first_start = supervisor.start( 'one-time-logger', './test/citizen/one-time-logger' ),
+            first_pid = first_start.ref.pid;
       });
 
       it('will not restart a currently-running citizen', function(){
@@ -397,6 +403,27 @@ describe('Supe Test Suite', function(){
       });
 
       supervisor.start( citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
+    });
+
+    it('will route mail to addressed citizen', function( done ){
+
+      this.timeout( 10000 );
+
+      supervisor.noticeboard.watch( 'supervisor-message', 'do-assertions', function( msg ){
+
+        var envelope = msg.notice;
+
+        console.log( 'just received msg', envelope );
+
+        if( envelope.type !== 'mail' ) return;
+        if( envelope.from !== 'routed-mail-receiver' ) return;
+        if( envelope.msg.received_mail_from !== 'routed-mail-sender' ) return;
+
+        done();
+      });
+
+      supervisor.start( 'routed-mail-receiver', './test/citizen/routed-mail-receiver' );
+      supervisor.start( 'routed-mail-sender', './test/citizen/routed-mail-sender' );
     });
   });
 });
