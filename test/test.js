@@ -102,13 +102,6 @@ describe('Supe Test Suite', function(){
         });
       });
 
-      it('will not create a new citizen with a non-existent file', function(){
-
-        var nonexistent_file_citizen = supervisor.start( 'nonexistent-file-citizen', './test/citizen/non-existent' );
-
-        assert.equal( !nonexistent_file_citizen, true, 'citizen was created when file param did not point to an existing file' );
-      });
-
       it('will not create a new citizen if name is associated with a different citizen', function(){
 
         var overwrite_error = false;
@@ -127,19 +120,23 @@ describe('Supe Test Suite', function(){
 
       it('will restart a previously-started citizen', function( done ){
 
-        var first_start = supervisor.start( 'one-time-logger', './test/citizen/one-time-logger' );
+        this.timeout( 12000 );
+
+        var first_start = supervisor.start( 'one-time-logger', './test/citizen/one-time-logger' ),
+            first_pid = first_start.ref.pid;
 
         setTimeout( function(){
 
-          var second_start = supervisor.start( 'one-time-logger' );
+          var second_start = supervisor.start( 'one-time-logger' ),
+              second_pid = second_start.ref.pid;
 
           assert.equal( Object.prototype.toString.call( second_start ) === '[object Object]', true, 'second start attempt did not return an object as expected' );
           assert.equal( second_start.hasOwnProperty( 'ref' ), true, 'second start attempt did not return with a process reference (property "ref")' );
-          assert.equal( first_start !== second_start, true, 'first and second start are the same instance' );
+          assert.equal( first_pid !== second_pid || first_start.ref !== second_start.ref, true, 'first and second start are the same instance' );
 
           done();
 
-        }, 200 );
+        }, 8000 );
       });
 
       it('will not restart a currently-running citizen', function(){
