@@ -303,6 +303,52 @@ describe('Supe Test Suite', function(){
       }, 2000 );
     });
 
+    it('sends a citizen-specific notice when crashed ctitzen is restarted', function( done ){
+
+      this.timeout( 10000 );
+
+      var name = 'one-time-crasher',
+          detected_crash = false;
+
+      supervisor.noticeboard.once( name + '-auto-restarted', 'do-assertions', function( msg ){
+
+        detected_crash = true;
+        assert.equal( detected_crash, true, 'did not detect specific citizen auto-restart' );
+        done();
+      });
+
+      supervisor.start( name, './test/citizen/one-time-crasher', { retries: 1 } );
+    });
+
+    it('sends a general notice when any crashed citizen is restarted', function( done ){
+
+      this.timeout( 15000 );
+      
+      var first_citizen_name = 'first-crasher',
+          second_citizen_name = 'second-crasher',
+          crashes_detected = 0;
+
+      supervisor.noticeboard.watch( 'citizen-auto-restarted', 'do-assertions', function( msg ){
+
+        crashes_detected += 1;
+
+        var details = msg.notice;
+
+        if( details.name !== second_citizen_name ) return;
+        
+        assert.equal( crashes_detected === 2, true, 'did not detect all citizen restarts' );
+        assert.equal( details.name === second_citizen_name, true, 'did not detect expected citizen crash' );
+        
+        done();
+      });
+
+      supervisor.start( first_citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
+
+      setTimeout( function(){
+        supervisor.start( second_citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
+      }, 1000 );
+    });
+
     it('sends a notice when it receives mail from a citizen', function( done ){
 
       this.timeout( 10000 );
@@ -322,6 +368,35 @@ describe('Supe Test Suite', function(){
       var mailer = supervisor.start( 'one-time-mailer', './test/citizen/one-time-mailer' );
 
       mailer.mail.send( 'ohayo gozaimasu' );
+    });
+  });
+
+  describe('Supervisor Behavior', function(){
+
+    this.timeout( 10000 );
+
+    var supervisor;
+
+    beforeEach( function(){
+      supervisor = supe();
+    });
+
+    it('will automatically restart a crashed citizen', function( done ){
+
+      this.timeout( 10000 );
+
+      var citizen_name = 'crasher';
+
+      supervisor.noticeboard.once( citizen_name + '-auto-restarted', 'do-assertions', function( msg ){
+
+        var details = msg.notice,
+            citizen = supervisor.get( citizen_name );
+
+        assert.equal( citizen.ref && citizen.ref.stdout && citizen.ref instanceof require('events'), true, 'restarted citizen does not have reference to valid child process' );
+        done();
+      });
+
+      supervisor.start( citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
     });
   });
 });
