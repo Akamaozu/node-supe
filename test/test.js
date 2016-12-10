@@ -412,7 +412,7 @@ describe('Supe Test Suite', function(){
       supervisor.start( citizen_name, './test/citizen/one-time-crasher', { retries: max_restarts });
     });
 
-    it('will route mail to addressed citizen', function( done ){
+    it('will route mail sent by a citizen to addressed citizen', function( done ){
 
       this.timeout( 10000 );
 
@@ -429,6 +429,30 @@ describe('Supe Test Suite', function(){
 
       supervisor.start( 'routed-mail-receiver', './test/citizen/routed-mail-receiver' );
       supervisor.start( 'routed-mail-sender', './test/citizen/routed-mail-sender' );
+    });
+
+    it('will requeue unacked mail if a citizen crashes', function( done ){
+
+      this.timeout( 10000 );
+
+      var name = 'unacker',
+          message = 'CRASH',
+          citizen; 
+
+      supervisor.noticeboard.once( name + '-crashed', 'do-assertions', function( msg ){
+
+        console.log( citizen.state );
+        console.log( citizen.mail.inbox );
+
+        assert.equal( citizen.state.current_mail === null, true, 'citizen should not have current mail in its state' );
+        assert.equal( citizen.mail.inbox.length === 1, true, 'inbox does not contain expected amount of mail' );
+        assert.equal( citizen.mail.inbox[0].msg === message, true, 'content of message on queue does not match sent message' );
+        done();
+      });
+
+      citizen = supervisor.start( name, './test/citizen/unacked-mail', { retries: 0 });
+
+      citizen.mail.send( message ); 
     });
   });
 });
