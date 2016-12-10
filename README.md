@@ -28,7 +28,7 @@ var supe = require('supe'),
 
 ### Set Script Overcrash
 
-NOTE: By default supe does nothing when a script overcrashes. It will keep reviving even when the script over-crashes. See [Handling Overcrashes](#handling-overcrashes) for ways to deal with excessive crashes.  
+NOTE: By default supe wil lstop reviving even when the script over-crashes.
 
 ```js
 var supe = require('supe'),
@@ -65,36 +65,36 @@ Watch for these internal notices using the exposed noticeboard instance.
 // log pipe worker two output
   supervisor.noticeboard.watch( 'worker2-output', 'pipe-to-console', function( msg ){
 
-    var output = msg.notice;
-    console.log( '[worker2] ' + output );
+    var details = msg.notice;
+    console.log( '[worker2] ' + details.output );
   });
 
 // log pipe worker three errors
   supervisor.noticeboard.watch( 'worker3-error', 'pipe-to-console', function( msg ){
 
-    var error = msg.notice.toString();
-    console.log( '[worker3][error] ' + error );
+    var details = msg.notice;
+    console.log( '[worker3][error] ' + details.error );
   });
 
 // log shutdowns
   supervisor.noticeboard.watch( 'citizen-shutdown', 'log-shutdowns', function( msg ){
     
-    var name = msg.notice;
-    console.log( name + ' shut down' );
+    var details = msg.notice;
+    console.log( details.name + ' shut down' );
   });
 
 // log overcrashes
   supervisor.noticeboard.watch( 'citizen-excessive-crash', 'log-excessive-crashes', function( msg ){
     
-    var name = msg.notice;
-    console.log( name + ' crashed more than permitted threshold' );
+    var details = msg.notice;
+    console.log( details.name + ' crashed more than permitted threshold' );
   });
 
 // crash when worker two overcrashes
   supervisor.noticeboard.watch( 'citizen-excessive-crash', 'log-excessive-crashes', function( msg ){
     
-    var name = msg.notice;
-    if( name ==  'worker2' ) throw new Error( 'worker 2 crashed excessively' );
+    var details = msg.notice;
+    if( details.name === 'worker2' ) throw new Error( 'worker 2 crashed excessively' );
   });
 ```
 
@@ -288,42 +288,4 @@ var supe = require('supe'),
 supervisor.start( 'subworker', 'sub-worker.js' );
 
 if( supe.supervised ) supe.mail.send( 'started a subworker' );
-``` 
-
-## Tips
-
-### Handling Overcrashes
-
-#### 1. Crash the supervisor
-
-```js
-supervisor.noticeboard.watch( 'citizen-excessive-crash', 'crash-supervisor', function( msg ){
-  
-  var name = msg.notice;
-  throw new Error( name + ' crashed excessively' );
-});
-```
-
-#### 2. Stop (and maybe restart) script
-
-```js
-supervisor.noticeboard.watch( 'citizen-excessive-crash', 'crash-supervisor', function( msg ){
-  
-  var name = msg.notice,
-      citizen = supe.get( name );
-
-  citizen.ref.exit();
-
-  // restart in 30 secs
-
-  setTimeout( function(){
-
-    supe.start( name );
-  
-  }, 30 * 1000 );
-
-  // you don't need to resupply the file parameter to start.
-  // Supe is already aware of the script, so it will simply restart it.
-  // its mailbox will remain intact this way.
-});
 ```

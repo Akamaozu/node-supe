@@ -1,6 +1,6 @@
 {
   "name": "supe",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Erlang-inspired Process Supervision Library",
   "main": "index.js",
   "dependencies": {
