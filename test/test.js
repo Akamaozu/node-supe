@@ -441,8 +441,26 @@ describe('Supe Test Suite', function(){
 
       supervisor.noticeboard.once( name + '-crashed', 'do-assertions', function( msg ){
 
-        console.log( citizen.state );
-        console.log( citizen.mail.inbox );
+        assert.equal( citizen.state.current_mail === null, true, 'citizen should not have current mail in its state' );
+        assert.equal( citizen.mail.inbox.length === 1, true, 'inbox does not contain expected amount of mail' );
+        assert.equal( citizen.mail.inbox[0].msg === message, true, 'content of message on queue does not match sent message' );
+        done();
+      });
+
+      citizen = supervisor.start( name, './test/citizen/unacked-mail', { retries: 0 });
+
+      citizen.mail.send( message ); 
+    });
+
+    it('will requeue unacked mail if a citizen shuts down', function( done ){
+
+      this.timeout( 10000 );
+
+      var name = 'unacker',
+          message = 'SHUTDOWN',
+          citizen; 
+
+      supervisor.noticeboard.once( name + '-shutdown', 'do-assertions', function( msg ){
 
         assert.equal( citizen.state.current_mail === null, true, 'citizen should not have current mail in its state' );
         assert.equal( citizen.mail.inbox.length === 1, true, 'inbox does not contain expected amount of mail' );
