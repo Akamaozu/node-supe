@@ -218,7 +218,7 @@ describe('Supe Test Suite', function(){
       supervisor = supe({ retries: 0 });
     });
 
-    it('sends a citizen-specific notice when it shuts down', function( done ){
+    it('sends notice "(name)-shutdown" when a citizen shuts down', function( done ){
 
       this.timeout( 15000 );
       
@@ -235,7 +235,7 @@ describe('Supe Test Suite', function(){
       supervisor.start( 'one-time-logger', './test/citizen/one-time-logger' );
     });
 
-    it('sends a general notice when any citizen shuts down', function( done ){
+    it('sends notice "citizen-shutdown" when any citizen shuts down', function( done ){
 
       this.timeout( 15000 );
       
@@ -264,7 +264,7 @@ describe('Supe Test Suite', function(){
       }, 2000 );
     });
 
-    it('sends a citizen-specific notice on crash', function( done ){
+    it('sends notice "(name)-crashed" on crash', function( done ){
 
       this.timeout( 10000 );
 
@@ -280,7 +280,7 @@ describe('Supe Test Suite', function(){
       supervisor.start( 'one-time-crasher', './test/citizen/one-time-crasher', { retries: 0 } );
     });
 
-    it('sends a general notice when any citizen crashes', function( done ){
+    it('sends notice "citizen-crashed" when any citizen crashes', function( done ){
 
       this.timeout( 15000 );
       
@@ -309,7 +309,7 @@ describe('Supe Test Suite', function(){
       }, 2000 );
     });
 
-    it('sends a citizen-specific notice when crashed ctitzen is restarted', function( done ){
+    it('sends notice "(name)-auto-restarted" when crashed citizen is restarted', function( done ){
 
       this.timeout( 10000 );
 
@@ -326,7 +326,7 @@ describe('Supe Test Suite', function(){
       supervisor.start( name, './test/citizen/one-time-crasher', { retries: 1 } );
     });
 
-    it('sends a general notice when any crashed citizen is restarted', function( done ){
+    it('sends notice "citizen-auto-restarted" when any crashed citizen is restarted', function( done ){
 
       this.timeout( 15000 );
       
@@ -353,27 +353,6 @@ describe('Supe Test Suite', function(){
       setTimeout( function(){
         supervisor.start( second_citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
       }, 1000 );
-    });
-
-    it('sends a notice when it receives mail from a citizen', function( done ){
-
-      this.timeout( 10000 );
-
-      var received_mail = false;
-
-      supervisor.noticeboard.watch( 'supervisor-message', 'do-assertions', function( msg ){
-
-        if( msg.notice.type !== 'mail' ) return;
-
-        received_mail = true;
-
-        assert.equal( received_mail === true, true, 'did not detect specific citizen crash' );
-        done();
-      });
-
-      var mailer = supervisor.start( 'one-time-mailer', './test/citizen/one-time-mailer' );
-
-      mailer.mail.send( 'ohayo gozaimasu' );
     });
   });
 
@@ -405,6 +384,34 @@ describe('Supe Test Suite', function(){
       supervisor.start( citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
     });
 
+    it('will not automatically restart citizen that crashed excessively', function( done ){
+
+      this.timeout( 0 );
+
+      var citizen_name = 'crasher',
+          max_restarts = 3,
+          restarts = 0;
+
+      supervisor.noticeboard.watch( citizen_name + '-auto-restarted', 'count-auto-restarts', function(){
+
+        restarts += 1;
+
+        if( restarts > max_restarts ) done( new Error( 'restarted citizen more than permitted amount of times' ) );
+      });
+
+      supervisor.noticeboard.watch( citizen_name + '-excessive-crash', 'do-assertions', function(){
+
+        // wait two seconds before doing assertions, just in case
+          setTimeout( function(){
+
+            assert.equal( restarts === max_restarts, true, 'current restarts does not match max allowed restarts' );
+            done();
+          }, 2000 );
+      });
+
+      supervisor.start( citizen_name, './test/citizen/one-time-crasher', { retries: max_restarts });
+    });
+
     it('will route mail to addressed citizen', function( done ){
 
       this.timeout( 10000 );
@@ -412,8 +419,6 @@ describe('Supe Test Suite', function(){
       supervisor.noticeboard.watch( 'supervisor-message', 'do-assertions', function( msg ){
 
         var envelope = msg.notice;
-
-        console.log( 'just received msg', envelope );
 
         if( envelope.type !== 'mail' ) return;
         if( envelope.from !== 'routed-mail-receiver' ) return;
