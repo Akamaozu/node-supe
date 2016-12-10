@@ -478,7 +478,7 @@ describe('Supe Test Suite', function(){
 
     it('can pause flow of inbound mail', function( done ){
 
-      this.timeout( 0 );
+      this.timeout( 10000 );
 
       var name = 'pauser',
           citizen,
