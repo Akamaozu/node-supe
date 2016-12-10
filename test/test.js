@@ -14,7 +14,12 @@ describe('Supe Test Suite', function(){
   describe('Supervisor (Instantiated Supe) Properties', function(){
 
     var supervisor = supe(),
-        expected_properties = [ 'start', 'get', 'noticeboard' ];
+        expected_properties = [ 'register', 'start', 'get', 'noticeboard' ];
+
+    it('has its own "register" function', function(){   
+
+      assert.equal( supervisor.hasOwnProperty('register') && typeof supervisor.register === 'function', true, 'didn\'t instantiate with its own "register" function');
+    });
 
     it('has its own "start" function', function(){   
 
@@ -23,7 +28,7 @@ describe('Supe Test Suite', function(){
 
     it('has its own "get" function', function(){   
 
-      assert.equal( supervisor.hasOwnProperty('get') && typeof supervisor.start === 'function', true, 'didn\'t instantiate with its own "get" function');
+      assert.equal( supervisor.hasOwnProperty('get') && typeof supervisor.get === 'function', true, 'didn\'t instantiate with its own "get" function');
     });
 
     it('has its own "noticeboard" object', function(){   
@@ -46,6 +51,112 @@ describe('Supe Test Suite', function(){
 
   describe('Supervisor Functions Behavior', function(){
 
+    describe('Supervisor.register', function(){
+      
+      var supervisor,
+          new_process; 
+
+      beforeEach( function(){
+
+        supervisor = supe();
+        new_process = supervisor.register( 'logger', './test/citizen/interval-logger' );
+      });
+
+      it('returns an object (citizen)', function( done ){
+
+        assert.equal( Object.prototype.toString.call( new_process ) === '[object Object]', true, 'did not return an object' );
+        setTimeout( done, 0 );
+      });
+
+      it('will not create a new citizen without name parameter', function(){
+
+        var crashed = false;
+
+        try{
+
+          supervisor.register( null, './test/citizen/interval-logger' );
+        }
+
+        catch( e ){ crashed = true; }
+
+        assert.equal( crashed === true , true, 'citizen was created without name parameter' );
+      });
+
+      it('will not create a new citizen without file parameter', function(){
+
+        var failed = false;
+
+        try{
+
+          supervisor.register( 'fileless-citizen' );
+        }
+
+        catch( e ){ failed = true }
+
+        assert.equal( failed === true, true, 'citizen was created without file parameter' );
+      });
+
+      it('will not create a new citizen if file parameter is not a string', function(){
+
+        var nonstrings = [ 1, [], {}, function(){} ];
+
+        nonstrings.forEach( function( nonstring ){
+
+          var failed = false;
+
+          try{
+
+            supervisor.register( 'nonstring-file-citizen' );
+          }
+
+          catch( e ){ failed = true; }
+
+          assert.equal( failed === true, true, 'citizen was created with a non-string file parameter' );
+        });
+      });
+
+      it('will not create a new citizen if name is associated with a different citizen', function(){
+
+        var overwrite_error = false;
+
+        supervisor.register( 'common-citizen', './test/citizen/one-time-logger' );
+
+        try{
+
+          common_citizen_2 = supervisor.register( 'common-citizen', './test/citizen/interval-logger' );
+          console.log(  common_citizen_2 );
+        }
+
+        catch( e ){ overwrite_error = true; }
+
+        assert.equal( overwrite_error === true, true, 'new citizen was registered under the name of an existing citizen' );
+      });
+
+      it('will pass parameters to citizen\'s config', function(){
+
+        var supervisor = supe(),
+            params = { retries: 5, duration: 5, happy: true },
+            citizen = supervisor.register( 'custom-logger', './test/citizen/one-time-logger', params );
+
+        for( var prop in params ){
+
+          if( !params.hasOwnProperty( prop ) ) continue;
+
+          assert.equal( citizen.config.hasOwnProperty( prop ), true, 'citizen config does not have expected property "' + prop + '"' );            
+          assert.equal( citizen.config[ prop ] === params[ prop ], true, 'parameter property "' + prop + '" does not match citizen config\'s "' + prop + '"' );            
+        }
+      });
+
+      it('will override default citizen\'s config', function(){
+
+        var supervisor = supe(),
+            default_logger = supervisor.register( 'default-logger', './test/citizen/one-time-logger' ),
+            custom_logger = supervisor.register( 'custom-logger', './test/citizen/one-time-logger', { retries: 5, duration: 5, happy: true });
+
+        assert.equal( default_logger.config !== custom_logger.config, true, 'config for default and custom loggers are identical' );
+      });
+    });
+
     describe('Supervisor.start', function(){
       
       var supervisor,
@@ -55,12 +166,6 @@ describe('Supe Test Suite', function(){
 
         supervisor = supe();
         new_process = supervisor.start( 'logger', './test/citizen/interval-logger' );
-      });
-
-      it('returns an object (citizen)', function( done ){
-
-        assert.equal( Object.prototype.toString.call( new_process ) === '[object Object]', true, 'did not return an object' );
-        setTimeout( done, 0 );
       });
 
       it('citizen has a process reference ("ref" property)', function(){
@@ -73,55 +178,6 @@ describe('Supe Test Suite', function(){
         assert.equal( new_process.ref.stdout instanceof require('events'), true, 'new process reference property "stdout" is not an event emitter' );
         assert.equal( new_process.ref.hasOwnProperty( 'stderr' ), true, 'new process reference does not have expected property "stderr"' );
         assert.equal( new_process.ref.stderr instanceof require('events'), true, 'new process reference property "stderr" is not an event emitter' );
-      });
-
-      it('will not create a new citizen without name parameter', function(){
-
-        var crashed = false;
-
-        try{
-
-          supervisor.start( null, './test/citizen/interval-logger' );
-        }
-
-        catch( e ){ crashed = true; }
-
-        assert.equal( crashed === true , true, 'citizen was created without name parameter' );
-      });
-
-      it('will not create a new citizen without file parameter', function(){
-
-        var fileless_citizen = supervisor.start( 'fileless-citizen' );
-
-        assert.equal( !fileless_citizen, true, 'citizen was created without file parameter' );
-      });
-
-      it('will not create a new citizen if file parameter is not a string', function(){
-
-        var nonstrings = [ 1, [], {}, function(){} ],
-            nonstring_file_citizen;
-
-        nonstrings.forEach( function( nonstring ){
-
-          nonstring_file_citizen = supervisor.start( 'nonstring-file-citizen' );
-          assert.equal( !nonstring_file_citizen, true, 'citizen was created with a non-string file parameter' );
-        });
-      });
-
-      it('will not create a new citizen if name is associated with a different citizen', function(){
-
-        var overwrite_error = false;
-
-        supervisor.start( 'common-citizen', './test/citizen/one-time-logger' );
-
-        try{
-
-          common_citizen_2 = supervisor.start( 'common-citizen', './test/citizen/interval-logger' );
-        }
-
-        catch( e ){ overwrite_error = true; }
-
-        assert.equal( overwrite_error === true, true, 'new citizen was registered under the name of an existing citizen' );
       });
 
       it('will restart a previously-started citizen', function( done ){
@@ -150,30 +206,6 @@ describe('Supe Test Suite', function(){
         var new_logger = supervisor.start( 'logger' );
 
         assert.equal( Object.prototype.toString.call( new_logger) !== ['object Object'], true, 'restarted currently-running process' );
-      });
-
-      it('will pass parameters to citizen\'s config', function(){
-
-        var supervisor = supe(),
-            params = { retries: 5, duration: 5, happy: true },
-            citizen = supervisor.start( 'custom-logger', './test/citizen/one-time-logger', params );
-
-        for( var prop in params ){
-
-          if( !params.hasOwnProperty( prop ) ) continue;
-
-          assert.equal( citizen.config.hasOwnProperty( prop ), true, 'citizen config does not have expected property "' + prop + '"' );            
-          assert.equal( citizen.config[ prop ] === params[ prop ], true, 'parameter property "' + prop + '" does not match citizen config\'s "' + prop + '"' );            
-        }
-      });
-
-      it('will override default citizen\'s config', function(){
-
-        var supervisor = supe(),
-            default_logger = supervisor.start( 'default-logger', './test/citizen/one-time-logger' ),
-            custom_logger = supervisor.start( 'custom-logger', './test/citizen/one-time-logger', { retries: 5, duration: 5, happy: true });
-
-        assert.equal( default_logger.config !== custom_logger.config, true, 'config for default and custom loggers are identical' );
       });
     });
 
