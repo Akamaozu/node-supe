@@ -449,7 +449,7 @@ describe('Supe Test Suite', function(){
 
       citizen = supervisor.start( name, './test/citizen/unacked-mail', { retries: 0 });
 
-      citizen.mail.send( message ); 
+      citizen.mail.send( message );
     });
 
     it('will requeue unacked mail if a citizen shuts down', function( done ){
@@ -471,6 +471,49 @@ describe('Supe Test Suite', function(){
       citizen = supervisor.start( name, './test/citizen/unacked-mail', { retries: 0 });
 
       citizen.mail.send( message ); 
+    });
+  });
+
+  describe('Citizen Behavior', function(){
+
+    it('can pause flow of inbound mail', function( done ){
+
+      this.timeout( 0 );
+
+      var name = 'pauser',
+          citizen,
+          paused_at,
+          pause_duration_ms;
+
+      supervisor.noticeboard.watch( 'supervisor-message', 'handle-mail', function( msg ){
+
+        var envelope = msg.notice,
+            content;
+
+        if( !envelope.msg ) return;
+
+        content = envelope.msg;
+
+        if( content.pause_for ){
+
+          paused_at = content.paused_at;
+          pause_duration_ms = content.pause_for;
+        }
+
+        if( content.received === 'do assertions' ){
+
+          var received_at = Date.now(),
+              processed = received_at - paused_at;
+
+          assert.equal( processed >= pause_duration_ms, true, 'mail was processed in ' + processed + 'ms but pause duration is ' + pause_duration_ms + 'ms' );          
+          done();
+        }
+      });
+
+      citizen = supervisor.start( name, './test/citizen/paused-mail', { retries: 0 });
+
+      citizen.mail.send( 'PAUSE' );
+      citizen.mail.send( 'do assertions' );
     });
   });
 });
