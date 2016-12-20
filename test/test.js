@@ -632,4 +632,99 @@ describe('Supe Test Suite', function(){
       citizen.mail.send( 'do assertions' );
     });
   });
+
+  describe('Citizen Noticeboard Integration', function(){
+
+    var supervisor;
+    
+    beforeEach( function(){
+      supervisor = supe({ retries: 0 });
+    });
+
+    it('can watch a notice on supervisor\'s noticeboard', function( done ){
+
+      var sample_notice = 'sample-notice',
+          sample_message = 'hello citizen';
+
+      this.timeout( 10000 );
+
+      supervisor.noticeboard.watch( 'citizen-output', 'log', function( msg ){
+
+        console.log( '[' + msg.notice.name + '] ' + msg.notice.output );
+      });
+
+      supervisor.noticeboard.watch( 'supervisor-message', 'do-assertions', function( msg ){
+
+        if( msg.notice.type !== 'mail' ) return;
+
+        var content = msg.notice.msg;
+
+        if( !content.received || !content.notice ) return;
+
+        assert.equal( content.notice, sample_notice, 'received notice is not what was sent' );
+        assert.equal( content.received, sample_message, 'received message is not what was sent' );
+
+        done();
+      });
+
+      supervisor.start( 'notice-receiver', './test/citizen/notice-receiver', { retries: 0 });
+
+      setTimeout( function(){
+
+        supervisor.noticeboard.notify( sample_notice, sample_message );
+      }, 3000 );
+    });
+
+    it('can "watch once" a notice on supervisor\'s noticeboard', function( done ){
+
+      var sample_notice = 'sample-notice',
+          sample_message = 'hello citizen',
+          citizen_responses = 0;
+
+      this.timeout( 10000 );
+
+      supervisor.noticeboard.watch( 'citizen-output', 'log', function( msg ){
+
+        console.log( '[' + msg.notice.name + '] ' + msg.notice.output );
+      });
+
+      supervisor.noticeboard.watch( 'supervisor-message', 'do-assertions', function( msg ){
+
+        if( msg.notice.type !== 'mail' ) return;
+
+        var content = msg.notice.msg;
+
+        if( !content.received || !content.notice ) return;
+
+        citizen_responses += 1;
+      });
+
+      supervisor.start( 'notice-receiver', './test/citizen/notice-once-receiver', { retries: 0 });
+
+      setTimeout( function(){
+
+        supervisor.noticeboard.notify( sample_notice, sample_message );
+        supervisor.noticeboard.notify( sample_notice, sample_message );
+        supervisor.noticeboard.notify( sample_notice, sample_message );
+      }, 3000 );
+
+      setTimeout( function(){
+
+        assert.equal( citizen_responses, 1 );
+        done();
+      }, 9000 );
+    });
+
+    it('can post a notice on supervisor\'s noticeboard', function( done ){
+
+      this.timeout( 10000 );
+
+      supervisor.noticeboard.watch( 'sample-notice-from-citizen', 'do-assertions', function( msg ){
+        
+        done();
+      });
+
+      supervisor.start( 'notice-sender', './test/citizen/notice-sender', { retries: 0 });
+    });
+  });
 });
