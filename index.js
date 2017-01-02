@@ -6,4 +6,5 @@ if( process && process.send ){
 
   module.exports.mail = require('./lib/supervised-mail');
   module.exports.signal = require('./lib/supervised-send-signal');
+  module.exports.noticeboard = require('./lib/supervised-noticeboard');
 } 

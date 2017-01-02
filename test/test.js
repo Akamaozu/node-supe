@@ -250,6 +250,90 @@ describe('Supe Test Suite', function(){
       supervisor = supe({ retries: 0 });
     });
 
+    it('sends notice "(name)-registered" when citizen is registered', function( done ){
+
+      this.timeout( 10000 );
+
+      var registered = false;
+
+      supervisor.noticeboard.once( 'one-time-crasher-registered', 'do-assertions', function( msg ){
+
+        registered = true;
+        assert.equal( registered, true, 'did not detect specific citizen registration' );
+        done();
+      });
+
+      supervisor.register( 'one-time-crasher', './test/citizen/one-time-crasher', { retries: 0 } );
+    });
+
+    it('sends notice "citizen-registered" when any citizen is registered', function( done ){
+
+      this.timeout( 10000 );
+      
+      var first_citizen_name = 'first-crasher',
+          second_citizen_name = 'second-crasher',
+          registrations_detected = 0;
+
+      supervisor.noticeboard.watch( 'citizen-registered', 'do-assertions', function( msg ){
+
+        registrations_detected += 1;
+
+        var details = msg.notice;
+
+        if( details.name !== second_citizen_name ) return;
+        
+        assert.equal( registrations_detected === 2, true, 'did not detect all citizen registrations' );
+        assert.equal( details.name === second_citizen_name, true, 'did not detect expected citizen registration' );
+        
+        done();
+      });
+
+      supervisor.register( first_citizen_name, './test/citizen/one-time-crasher' );
+      supervisor.register( second_citizen_name, './test/citizen/one-time-crasher' );
+    });
+
+    it('sends notice "(name)-started" when citizen is started', function( done ){
+
+      this.timeout( 10000 );
+
+      var started = false;
+
+      supervisor.noticeboard.once( 'one-time-crasher-started', 'do-assertions', function( msg ){
+
+        started = true;
+        assert.equal( started, true, 'did not detect specific citizen start-up' );
+        done();
+      });
+
+      supervisor.start( 'one-time-crasher', './test/citizen/one-time-crasher', { retries: 0 } );
+    });
+
+    it('sends notice "citizen-started" when any citizen is started', function( done ){
+
+      this.timeout( 10000 );
+      
+      var first_citizen_name = 'first-crasher',
+          second_citizen_name = 'second-crasher',
+          startups_detected = 0;
+
+      supervisor.noticeboard.watch( 'citizen-started', 'do-assertions', function( msg ){
+
+        startups_detected += 1;
+
+        var details = msg.notice;
+
+        if( details.name !== second_citizen_name ) return;
+        
+        assert.equal( startups_detected === 2, true, 'did not detect all citizen start' );
+        assert.equal( details.name === second_citizen_name, true, 'did not detect expected citizen start' );
+        
+        done();
+      });
+
+      supervisor.start( first_citizen_name, './test/citizen/one-time-crasher' );
+      supervisor.start( second_citizen_name, './test/citizen/one-time-crasher' );
+    });
+
     it('sends notice "(name)-shutdown" when a citizen shuts down', function( done ){
 
       this.timeout( 15000 );
@@ -546,6 +630,101 @@ describe('Supe Test Suite', function(){
 
       citizen.mail.send( 'PAUSE' );
       citizen.mail.send( 'do assertions' );
+    });
+  });
+
+  describe('Citizen Noticeboard Integration', function(){
+
+    var supervisor;
+    
+    beforeEach( function(){
+      supervisor = supe({ retries: 0 });
+    });
+
+    it('can watch a notice on supervisor\'s noticeboard', function( done ){
+
+      var sample_notice = 'sample-notice',
+          sample_message = 'hello citizen';
+
+      this.timeout( 10000 );
+
+      supervisor.noticeboard.watch( 'citizen-output', 'log', function( msg ){
+
+        console.log( '[' + msg.notice.name + '] ' + msg.notice.output );
+      });
+
+      supervisor.noticeboard.watch( 'supervisor-message', 'do-assertions', function( msg ){
+
+        if( msg.notice.type !== 'mail' ) return;
+
+        var content = msg.notice.msg;
+
+        if( !content.received || !content.notice ) return;
+
+        assert.equal( content.notice, sample_notice, 'received notice is not what was sent' );
+        assert.equal( content.received, sample_message, 'received message is not what was sent' );
+
+        done();
+      });
+
+      supervisor.start( 'notice-receiver', './test/citizen/notice-receiver', { retries: 0 });
+
+      setTimeout( function(){
+
+        supervisor.noticeboard.notify( sample_notice, sample_message );
+      }, 3000 );
+    });
+
+    it('can "watch once" a notice on supervisor\'s noticeboard', function( done ){
+
+      var sample_notice = 'sample-notice',
+          sample_message = 'hello citizen',
+          citizen_responses = 0;
+
+      this.timeout( 10000 );
+
+      supervisor.noticeboard.watch( 'citizen-output', 'log', function( msg ){
+
+        console.log( '[' + msg.notice.name + '] ' + msg.notice.output );
+      });
+
+      supervisor.noticeboard.watch( 'supervisor-message', 'do-assertions', function( msg ){
+
+        if( msg.notice.type !== 'mail' ) return;
+
+        var content = msg.notice.msg;
+
+        if( !content.received || !content.notice ) return;
+
+        citizen_responses += 1;
+      });
+
+      supervisor.start( 'notice-receiver', './test/citizen/notice-once-receiver', { retries: 0 });
+
+      setTimeout( function(){
+
+        supervisor.noticeboard.notify( sample_notice, sample_message );
+        supervisor.noticeboard.notify( sample_notice, sample_message );
+        supervisor.noticeboard.notify( sample_notice, sample_message );
+      }, 3000 );
+
+      setTimeout( function(){
+
+        assert.equal( citizen_responses, 1 );
+        done();
+      }, 9000 );
+    });
+
+    it('can post a notice on supervisor\'s noticeboard', function( done ){
+
+      this.timeout( 10000 );
+
+      supervisor.noticeboard.watch( 'sample-notice-from-citizen', 'do-assertions', function( msg ){
+        
+        done();
+      });
+
+      supervisor.start( 'notice-sender', './test/citizen/notice-sender', { retries: 0 });
     });
   });
 });
