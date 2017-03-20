@@ -4,7 +4,7 @@
   "description": "Erlang-inspired Process Supervision Library",
   "main": "index.js",
   "dependencies": {
-    "cjs-noticeboard": "0.0.7",
+    "cjs-noticeboard": "0.0.8",
     "merge-objects": "^1.0.5"
   },
   "devDependencies": {
