@@ -1,10 +1,10 @@
 {
   "name": "supe",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Erlang-inspired Process Supervision Library",
   "main": "index.js",
   "dependencies": {
-    "cjs-noticeboard": "0.0.8",
+    "cjs-noticeboard": "0.0.7",
     "merge-objects": "^1.0.5"
   },
   "devDependencies": {
