@@ -250,6 +250,58 @@ describe('Supe Test Suite', function(){
         });
       });
     });
+
+    describe('Supervisor.use', function(){
+
+      supervisor = supe();
+
+      it('executes given function with current Supervisor as first argument', function(){
+
+        var unique = Date.now(),
+            module = function( supe ){
+
+            supe.is_same_instance = unique;
+          }
+
+        supervisor.use( module );
+
+        assert.equal( supervisor.hasOwnProperty( 'is_same_instance' ) === true, true, 'supervisor instance does not have prop "is_same_instance"' );
+        assert.equal( supervisor.is_same_instance === unique, true, 'supervisor prop "is_same_instance" does not match expected value' );
+      });
+
+      it('does nothing and returns false if first argument is false-y', function(){
+
+        var falsey_values = [ false, 0, '', null, undefined ];
+
+        falsey_values.forEach( function( falsey ){
+          assert.equal( supervisor.use( falsey ) === false, true, 'expected false, got something else' );
+        });
+      });
+
+      it('throws an error if first argument is not a function', function(){
+
+        var non_functions = [
+          { type: 'number', val: 1 },
+          { type: 'string', val: '1' },
+          { type: 'array', val: ['1'] },
+          { type: 'object', val: { a: '1' } }
+        ]
+
+        non_functions.forEach( function( non_func ){
+
+          var error_thrown = false;
+
+          try {
+            supervisor.use( non_func.val );
+          }
+          catch( e ){
+            error_thrown = true;
+          }
+
+          assert.equal( error_thrown === true, true, 'error not thrown when given ' + non_func.type + ' argument' );
+        });
+      });
+    });
   });
 
   describe('Supervisor Noticeboard Integration', function(){
