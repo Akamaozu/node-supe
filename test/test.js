@@ -14,7 +14,7 @@ describe('Supe Test Suite', function(){
   describe('Supervisor (Instantiated Supe) Properties', function(){
 
     var supervisor = supe(),
-        expected_properties = [ 'register', 'start', 'get', 'noticeboard' ];
+        expected_properties = [ 'register', 'start', 'get', 'use', 'noticeboard', 'middleware' ];
 
     it('has its own "register" function', function(){   
 
@@ -31,9 +31,19 @@ describe('Supe Test Suite', function(){
       assert.equal( supervisor.hasOwnProperty('get') && typeof supervisor.get === 'function', true, 'didn\'t instantiate with its own "get" function');
     });
 
+    it('has its own "use" function', function(){   
+
+      assert.equal( supervisor.hasOwnProperty('use') && typeof supervisor.use === 'function', true, 'didn\'t instantiate with its own "get" function');
+    });
+
     it('has its own "noticeboard" object', function(){   
 
       assert.equal( supervisor.hasOwnProperty('noticeboard') && Object.prototype.toString.call( supervisor.noticeboard ) === '[object Object]', true, 'didn\'t instantiate with its own "noticeboard" object');
+    });
+
+    it('has its own "middleware" object', function(){   
+
+      assert.equal( supervisor.hasOwnProperty('middleware') && Object.prototype.toString.call( supervisor.middleware ) === '[object Object]', true, 'didn\'t instantiate with its own "noticeboard" object');
     });
 
     it('has no unexpected properties', function(){
