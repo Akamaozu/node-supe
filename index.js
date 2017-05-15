@@ -2,9 +2,21 @@ module.exports = require('./lib/supervisor');
 
 if( process && process.send ){
 
-  module.exports.supervised = true;
+  // is exporting to a citizen
+  // overload export with citizen-related utils
+    module.exports.supervised = true;
+    module.exports.use = load_citizen_module;
 
-  module.exports.mail = require('./lib/supervised-mail');
-  module.exports.signal = require('./lib/supervised-send-signal');
-  module.exports.noticeboard = require('./lib/supervised-noticeboard');
-} 
+  // load citizen core modules
+    module.exports.use( require('./lib/modules/citizen/signal') );
+    module.exports.use( require('./lib/modules/citizen/mail') );
+    module.exports.use( require('./lib/modules/citizen/supervisor-noticeboard-bindings') );
+}
+
+function load_citizen_module( loader ){
+
+  if( !loader ) return false;
+  if( typeof loader != 'function' ) throw new Error( 'module loader must be a function' );
+
+  loader( module.exports );
+}
