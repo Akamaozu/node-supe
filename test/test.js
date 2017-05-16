@@ -14,7 +14,7 @@ describe('Supe Test Suite', function(){
   describe('Supervisor (Instantiated Supe) Properties', function(){
 
     var supervisor = supe(),
-        expected_properties = [ 'register', 'start', 'get', 'use', 'noticeboard', 'middleware' ];
+        expected_properties = [ 'is_registered', 'register', 'start', 'get', 'use', 'noticeboard', 'middleware' ];
 
     it('has its own "register" function', function(){   
 
