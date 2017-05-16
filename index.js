@@ -1,10 +1,3 @@
-module.exports = require('./lib/supervisor');
+var is_citizen_instance = ( process && process.send );
 
-if( process && process.send ){
-
-  module.exports.supervised = true;
-
-  module.exports.mail = require('./lib/supervised-mail');
-  module.exports.signal = require('./lib/supervised-send-signal');
-  module.exports.noticeboard = require('./lib/supervised-noticeboard');
-} 
+module.exports = is_citizen_instance ? require('./lib/citizen') : require('./lib/supervisor');

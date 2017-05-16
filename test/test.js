@@ -14,7 +14,7 @@ describe('Supe Test Suite', function(){
   describe('Supervisor (Instantiated Supe) Properties', function(){
 
     var supervisor = supe(),
-        expected_properties = [ 'register', 'start', 'get', 'noticeboard' ];
+        expected_properties = [ 'is_registered', 'register', 'start', 'get', 'use', 'noticeboard', 'middleware' ];
 
     it('has its own "register" function', function(){   
 
@@ -31,9 +31,19 @@ describe('Supe Test Suite', function(){
       assert.equal( supervisor.hasOwnProperty('get') && typeof supervisor.get === 'function', true, 'didn\'t instantiate with its own "get" function');
     });
 
+    it('has its own "use" function', function(){   
+
+      assert.equal( supervisor.hasOwnProperty('use') && typeof supervisor.use === 'function', true, 'didn\'t instantiate with its own "get" function');
+    });
+
     it('has its own "noticeboard" object', function(){   
 
       assert.equal( supervisor.hasOwnProperty('noticeboard') && Object.prototype.toString.call( supervisor.noticeboard ) === '[object Object]', true, 'didn\'t instantiate with its own "noticeboard" object');
+    });
+
+    it('has its own "middleware" object', function(){   
+
+      assert.equal( supervisor.hasOwnProperty('middleware') && Object.prototype.toString.call( supervisor.middleware ) === '[object Object]', true, 'didn\'t instantiate with its own "noticeboard" object');
     });
 
     it('has no unexpected properties', function(){
@@ -237,6 +247,58 @@ describe('Supe Test Suite', function(){
           var get_val = supervisor.get( non_string );
 
           assert.equal( Object.prototype.toString.call( get_val ) !== ['object Object'], true, 'returned an object, not false' );
+        });
+      });
+    });
+
+    describe('Supervisor.use', function(){
+
+      supervisor = supe();
+
+      it('executes given function with current Supervisor as first argument', function(){
+
+        var unique = Date.now(),
+            module = function( supe ){
+
+            supe.is_same_instance = unique;
+          }
+
+        supervisor.use( module );
+
+        assert.equal( supervisor.hasOwnProperty( 'is_same_instance' ) === true, true, 'supervisor instance does not have prop "is_same_instance"' );
+        assert.equal( supervisor.is_same_instance === unique, true, 'supervisor prop "is_same_instance" does not match expected value' );
+      });
+
+      it('does nothing and returns false if first argument is false-y', function(){
+
+        var falsey_values = [ false, 0, '', null, undefined ];
+
+        falsey_values.forEach( function( falsey ){
+          assert.equal( supervisor.use( falsey ) === false, true, 'expected false, got something else' );
+        });
+      });
+
+      it('throws an error if first argument is not a function', function(){
+
+        var non_functions = [
+          { type: 'number', val: 1 },
+          { type: 'string', val: '1' },
+          { type: 'array', val: ['1'] },
+          { type: 'object', val: { a: '1' } }
+        ]
+
+        non_functions.forEach( function( non_func ){
+
+          var error_thrown = false;
+
+          try {
+            supervisor.use( non_func.val );
+          }
+          catch( e ){
+            error_thrown = true;
+          }
+
+          assert.equal( error_thrown === true, true, 'error not thrown when given ' + non_func.type + ' argument' );
         });
       });
     });
