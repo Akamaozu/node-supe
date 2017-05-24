@@ -15,8 +15,7 @@ npm install --save supe
 ### Setup
 
 ```js
-var supe = require('supe'),
-    supervisor = supe(),
+var supervisor = require('supe')(),
     server = supervisor.start( 'server', 'server.js' );
 
 // starts up server.js on a supervised process
@@ -28,11 +27,10 @@ var supe = require('supe'),
 
 ### Set Script Overcrash
 
-NOTE: By default supe wil lstop reviving even when the script over-crashes.
+NOTE: Supe will stop reviving a script after it over-crashes.
 
 ```js
-var supe = require('supe'),
-    supervisor = supe(),
+var supervisor = require('supe')(),
     server = supervisor.start( 'server', 'server.js', { retries: 3, duration: 3 });
 
 // if server.js crashes more than three times in three minutes, supe considers it overcrashed
@@ -41,8 +39,7 @@ var supe = require('supe'),
 ### Set Default Overcrash
 
 ```js
-var supe = require('supe'),
-    supervisor = supe({ retries: 3, duration: 3 }),
+var supervisor = require('supe')({ retries: 3, duration: 3 }),
     server = supervisor.start( 'server', 'server.js' ),
     worker = supervisor.start( 'worker', 'worker.js' );
 
@@ -62,18 +59,21 @@ Supe uses [cjs-noticeboard](https://www.npmjs.com/package/cjs-noticeboard "cjs-n
 Watch for these internal notices using the exposed noticeboard instance.
 
 ```js
-// log pipe worker two output
+// log individual citizen's output
   supervisor.noticeboard.watch( 'worker2-output', 'pipe-to-console', function( msg ){
 
     var details = msg.notice;
     console.log( '[worker2] ' + details.output );
   });
 
-// log pipe worker three errors
-  supervisor.noticeboard.watch( 'worker3-error', 'pipe-to-console', function( msg ){
+// log all citizen errors
+  supervisor.noticeboard.watch( 'citizen-error', 'pipe-to-console', function( msg ){
 
-    var details = msg.notice;
-    console.log( '[worker3][error] ' + details.error );
+    var details = msg.notice,
+        error = details.error,
+        citizen = details.name;
+
+    console.log( '['+ citizen +'][error] ' + details.error );
   });
 
 // log shutdowns
@@ -90,7 +90,7 @@ Watch for these internal notices using the exposed noticeboard instance.
     console.log( details.name + ' crashed more than permitted threshold' );
   });
 
-// crash when worker two overcrashes
+// crash supervisor when worker two overcrashes
   supervisor.noticeboard.watch( 'citizen-excessive-crash', 'log-excessive-crashes', function( msg ){
     
     var details = msg.notice;
@@ -202,7 +202,6 @@ supe.mail.receive( function( envelope, ack ){
 ```
 
 Change the mail receive callback whenever you want.
-( foundation of actor model? )
 
 ```js
 
@@ -275,8 +274,7 @@ Supervised scripts can supervise other scripts.
 ```js
 // inside supervisor.js
 
-var supe = require('supe'),
-    supervisor = supe();
+var supervisor = require('supe')();
 
 supervisor.start( 'worker', 'worker.js' );
 
