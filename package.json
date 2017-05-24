@@ -1,7 +1,7 @@
 {
   "name": "supe",
   "version": "0.1.1",
-  "description": "Erlang-inspired Process Supervision Library",
+  "description": "Flexible Framework for Fault-Tolerant Node.js Apps",
   "main": "index.js",
   "dependencies": {
     "cjs-noticeboard": "0.0.7",
