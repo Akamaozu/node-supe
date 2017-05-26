@@ -1,33 +1,92 @@
-Supe
-===
+<div style="font-size: 3em; font-weight: 900; text-align: center;">Supe</div>
+<div style="font-size: 1.75em; color: #333; text-align: center;">Flexible Framework for Fault-Tolerant Node.js Apps</div>
+<div style="text-align: center; margin-top: 1em;">
+  <img src="https://badge.fury.io/js/supe.svg" alt="npm">
+  <img src="https://travis-ci.org/Akamaozu/node-supe.svg?branch=master" alt="Travis CI">
+  <img src="https://coveralls.io/github/Akamaozu/node-supe?branch=master" alt="Code Coverage">
+</div>
 
-# Flexible Framework for Fault-Tolerant Node.js Apps
+# Intro
 
-[![npm version](https://badge.fury.io/js/supe.svg)](https://badge.fury.io/js/supe) [![travis ci](https://travis-ci.org/Akamaozu/node-supe.svg?branch=master)](https://travis-ci.org/Akamaozu/node-supe) [![Coverage Status](https://coveralls.io/repos/github/Akamaozu/node-supe/badge.svg?branch=master)](https://coveralls.io/github/Akamaozu/node-supe?branch=master)
+## Why You Should Care About Fault Tolerance
 
-## Install
+Your coworkers, mentors and heroes write faulty code. **You** write faulty code.
+
+JavaScript isn’t particularly forgiving when code fails, so your app rolls over and stays dead. While we have many tools for bringing a dead Node.js app back to life, we typically don’t structure them in ways that limit the problem's impact on the app.
+
+**Fault Tolerance reduces the impact problems have on your app**. At worst you’ll have a bottleneck in a component, but it won’t bring everything else to a grinding halt, or worse yet, send it to the big farm in the cloud.
+
+## Why You Should Try A Framework for Fault Tolerance
+
+You definitely don’t need one but a framework makes it **really easy to start** making things more fault-tolerant while providing **a common platform for building, sharing ideas and tools** the same way Express.js does for writing web servers.
+
+## How Supe Can Help
+
+While making your app more fault-tolerance is very rewarding, it is a VERY HARD THING™.
+
+- You need ways to communicate between formerly-cozy components.
+- Each component now outputs data to a different stdout.
+- Even though each component is still single-threaded, your overall application is now multi-threaded.
+
+This is just the tip of the iceberg of concerns introduced by trying to be fault-tolerance.
+
+Supe helps by providing good default solutions for these problems and allows you to modify (or overwrite) any particular one so you can implement the solution that works best for your specific challenge.
+
+# Install
 ```js
 npm install --save supe
 ```
 
-## Basic Use
+# Getting Started
 
-### Setup
+## Supervisors and Citizens
+
+The first step to fault-tolerance is breaking your app into separate parts.
+
+For example, instead of one file with multiple responsibilities like:
 
 ```js
-var supervisor = require('supe')(),
-    server = supervisor.start( 'server', 'server.js' );
+// inside app.js
+var http = express(),
+    db = db_driver(),
+    ws = websocket();
+```
 
-// starts up server.js on a supervised process
-// supe will restart server.js whenever it crashes
+We're moving towards separate programs with individual responsibilities and the app becomes their manager / coordinator.
 
+```js
+// inside app.js
+var http = supervisor.start( 'http', 'http.js' ),
+    db = supervisor.start( 'db', 'db-driver.js'),
+    ws = supervisor.start( 'ws', 'websocket.js');
+```
+
+Supe refers to the manager / coordinator as a supervisor; the components are called citizens.
+
+## Setup Supervisor
+
+### Create
+```js
+var supervisor = require('supe')();
+```
+
+### Supervise Citizens
+```js
+// supervise server.js
+supervisor.register( 'server', 'server.js' );
+supervisor.start( 'server ');
+
+// or
+supervisor.start( 'server', 'server.js' );
+
+// supervisor will restart server.js whenever it crashes
 ```
 
 ## Basic Config
 
-### Set Script Overcrash
+### Set Citizen Overcrash
 
-NOTE: Supe will stop reviving a script after it over-crashes.
+NOTE: Supe will stop reviving a citizen after it crashes excessively.
 
 ```js
 var supervisor = require('supe')(),
