@@ -117,6 +117,8 @@ Supe uses [cjs-noticeboard](https://www.npmjs.com/package/cjs-noticeboard "cjs-n
 
 All you need to do is watch a relevant notice and your code will be executed every time a notice is sent out.
 
+#### Watch a Notice
+
 Example:
 ```js
 // tell pagerduty component to send alert when component crashes excessively
@@ -133,9 +135,11 @@ Example:
   });
 ```
 
-Here's a thorough list of notices to watch.
+#### More About Notices
 
 ### Mail
+
+#### Basics
 
 Supervised scripts can send messages to supe.
 
@@ -213,95 +217,6 @@ supe.mail.receive( function( envelope, ack ){
 // worker2 says 98
 // worker1 says 4
 // worker2 says 97
-```
-
-You can temporarily stop receiving messages.
-
-None will be lost because supervisor stores them until supervised script is ready to receive again.
-
-```js
-// inside worker.js
-  
-supe.mail.receive( function( envelope, ack ){
-
-  var sender = envelope.from,
-      content = envelope.msg;
-
-  supe.mail.pause();
-  ack();
-
-  // acknowledging this mail does not resume stream of inbound messages
-  // resume mail stream in thirty minutes
-
-  setTimeout( supe.mail.receive, 30 * 60 * 1000 );
-});
-
-```
-
-Change the mail receive callback whenever you want.
-
-```js
-
-function callback1( envelope, ack ){
-
-  var sender = envelope.from,
-      content = envelope.msg;
-
-  console.log( 'callback one used!' );
-
-  supe.mail.receive( callback2 );
-  ack();
-}
-
-function callback2( envelope, ack ){
-
-  var sender = envelope.from,
-      content = envelope.msg;
-
-  console.log( 'callback two used!' );
-
-  supe.mail.receive( callback1 );
-  ack();
-}
-  
-supe.mail.receive( callback1 );
-
-// callback one used!
-// callback two used!
-// callback one used!
-// callback two used!
-// callback one used!
-// callback two used!
-```
-
-Unacknowledged mails will be returned to the top of the mailbox when supervised script crashes or shuts down.
-
-```js
-// worker one
-  
-for( var x = 1; x <= 100; x += 1 ){  
-  supe.mail.send({ to: 'worker2' }, x );
-}
-
-// worker two
-
-console.log( 'worker2 started' );
-  
-supe.mail.receive( function( envelope, ack ){
-
-  var sender = envelope.from,
-      content = envelope.msg;
-
-  console.log( sender + ' says: ' + content );
-  throw new Error( 'chaos monkey strikes' );
-});
-
-// worker2 started
-// worker1 says 1
-// worker2 started
-// worker1 says 1
-// worker2 started
-// worker1 says 1
 ```
 
 ### Supervised Supervisors
