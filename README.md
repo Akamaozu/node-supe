@@ -113,6 +113,7 @@ var worker2 = supervisor.start( 'worker2', 'worker.js', { retries: 20 }),
 
 ### Notices (Events)
 
+#### About
 Supe uses [cjs-noticeboard](https://www.npmjs.com/package/cjs-noticeboard "cjs-noticeboard on npm") to send out notices when certain actions happen. This makes it easy to extend Supe to build custom behavior for your supervisor.
 
 All you need to do is watch a relevant notice and your code will be executed every time a notice is sent out.
@@ -139,28 +140,32 @@ Example:
 
 ### Mail
 
-#### Basics
+#### About
+Mail is a simple yet reliable way to communicate between components. With a few lines of code, you can send some data to a citizen. When the citizen starts receiving data, hopefully they'll know what to do with what you sent.
 
-Supervised scripts can send messages to supe.
+Mail is more reliable than notices because they are stored on the supervisor regardless of citizen's state. When the citizen is ready to receive mail, they're sent in the same order they were received by the supervisor.
 
-```js  
-// inside worker.js
-
-var supe = require('supe');
-if( supe.supervised ) supe.mail.send( 'hello supervisor' );
-```
-
-Supervised scripts can route messages through supe to other supervised scripts.
+#### Send
 
 ```js
-// inside server.js
+// inside citizen
+var supe = require('supe');
+
+// to supervisor
+supe.mail.send( 'hello supervisor' );
+
+// to other citizen
+supe.mail.send({ to: 'worker-two' }, 'hello worker two' );
+```
+
+#### Receive
+
+```js
+// inside citizen
 
 var supe = require('supe');
-if( supe.supervised ) supe.mail.send({ to: 'worker3' }, 'hello worker three' );
 
-// inside worker.js
-
-if( supe.supervised ) supe.mail.receive( function( envelope, ack ){
+supe.mail.receive( function( envelope, ack ){
 
   var sender = envelope.from,
       content = envelope.msg;
@@ -218,6 +223,8 @@ supe.mail.receive( function( envelope, ack ){
 // worker1 says 4
 // worker2 says 97
 ```
+
+#### More About Mail
 
 ### Supervised Supervisors
 
