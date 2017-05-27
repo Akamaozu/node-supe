@@ -111,53 +111,31 @@ var worker2 = supervisor.start( 'worker2', 'worker.js', { retries: 20 }),
 
 ## Advanced Use
 
-### Noticeboard
+### Notices (Events)
 
-Supe uses [cjs-noticeboard](https://www.npmjs.com/package/cjs-noticeboard "cjs-noticeboard on npm") internally to coordinate its moving parts. 
+Supe uses [cjs-noticeboard](https://www.npmjs.com/package/cjs-noticeboard "cjs-noticeboard on npm") to send out notices when certain actions happen. This makes it easy to extend Supe to build custom behavior for your supervisor.
 
-Watch for these internal notices using the exposed noticeboard instance.
+All you need to do is watch a relevant notice and your code will be executed every time a notice is sent out.
 
+Example:
 ```js
-// log individual citizen's output
-  supervisor.noticeboard.watch( 'worker2-output', 'pipe-to-console', function( msg ){
-
-    var details = msg.notice;
-    console.log( '[worker2] ' + details.output );
-  });
-
-// log all citizen errors
-  supervisor.noticeboard.watch( 'citizen-error', 'pipe-to-console', function( msg ){
-
-    var details = msg.notice,
-        error = details.error,
-        citizen = details.name;
-
-    console.log( '['+ citizen +'][error] ' + details.error );
-  });
-
-// log shutdowns
-  supervisor.noticeboard.watch( 'citizen-shutdown', 'log-shutdowns', function( msg ){
+// tell pagerduty component to send alert when component crashes excessively
+  supervisor.noticeboard.watch( 'citizen-excessive-crash', 'send-pagerduty-alert', function( msg ){
     
-    var details = msg.notice;
-    console.log( details.name + ' shut down' );
-  });
+    var data = msg.notice,
+        citizen = data.name,
+        pagerduty = supervisor.get( 'pagerduty' );
 
-// log overcrashes
-  supervisor.noticeboard.watch( 'citizen-excessive-crash', 'log-excessive-crashes', function( msg ){
-    
-    var details = msg.notice;
-    console.log( details.name + ' crashed more than permitted threshold' );
-  });
-
-// crash supervisor when worker two overcrashes
-  supervisor.noticeboard.watch( 'citizen-excessive-crash', 'log-excessive-crashes', function( msg ){
-    
-    var details = msg.notice;
-    if( details.name === 'worker2' ) throw new Error( 'worker 2 crashed excessively' );
+    pagerduty.mail.send({
+      action: 'send-alert',
+      message: citizen + ' crashed excessively at ' + Date()
+    });
   });
 ```
 
-### Send Messages
+Here's a thorough list of notices to watch.
+
+### Mail
 
 Supervised scripts can send messages to supe.
 
