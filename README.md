@@ -1,10 +1,8 @@
-<div style="font-size: 3em; font-weight: 900; text-align: center;">Supe</div>
-<div style="font-size: 1.75em; color: #333; text-align: center;">Flexible Framework for Fault-Tolerant Node.js Apps</div>
-<div style="text-align: center; margin-top: 1em;">
-  <img src="https://badge.fury.io/js/supe.svg" alt="npm">
-  <img src="https://travis-ci.org/Akamaozu/node-supe.svg?branch=master" alt="Travis CI">
-  <img src="https://coveralls.io/github/Akamaozu/node-supe?branch=master" alt="Code Coverage">
-</div>
+# Supe
+
+# Fault-Tolerance Framework for Node.js Apps
+
+[![npm version](https://badge.fury.io/js/supe.svg)](https://badge.fury.io/js/supe) [![travis ci](https://travis-ci.org/Akamaozu/node-supe.svg?branch=master)](https://travis-ci.org/Akamaozu/node-supe) [![Coverage Status](https://coveralls.io/repos/github/Akamaozu/node-supe/badge.svg?branch=master)](https://coveralls.io/github/Akamaozu/node-supe?branch=master)
 
 # Intro
 
