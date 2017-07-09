@@ -80,7 +80,7 @@ supervisor.start( 'server', 'server.js' );
 // supervisor will restart server.js whenever it crashes
 ```
 
-## Basic Config
+## Basic Supervisor Config
 
 ### Set Citizen Overcrash
 
@@ -107,9 +107,13 @@ var worker2 = supervisor.start( 'worker2', 'worker.js', { retries: 20 }),
     worker3 = supervisor.start( 'worker3', 'worker.js', { duration: 1 });
 ```
 
-## Advanced Use
+## Supervisor Core API
 
-### Notices (Events)
+## Citizen Core API
+
+## Core Components
+
+### Noticeboard
 
 #### About
 Supe uses [cjs-noticeboard](https://www.npmjs.com/package/cjs-noticeboard "cjs-noticeboard on npm") to send out notices when certain actions happen. This makes it easy to extend Supe to build custom behavior for your supervisor.
