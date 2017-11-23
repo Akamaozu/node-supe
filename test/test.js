@@ -650,6 +650,22 @@ describe('Supe Test Suite', function(){
 
       citizen.mail.send( message ); 
     });
+
+    it('will cache citizen notices', function( done ){
+
+      supervisor.start( 'notice-sender', './test/citizen/notice-sender' );
+
+      setTimeout( check_cache_for_citizen_notice, 888 );
+
+      function check_cache_for_citizen_notice(){
+        var notice_cache = supervisor.noticeboard.cache[ 'sample-notice-from-citizen' ];
+
+        if( ! notice_cache ) return;
+        if( notice_cache !== 'hello supervisor' ) return;
+
+        done();
+      }
+    });
   });
 
   describe('Citizen Behavior', function(){
