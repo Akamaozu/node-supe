@@ -837,5 +837,42 @@ describe('Supe Test Suite', function(){
 
       supervisor.start( 'notice-sender', './test/citizen/notice-sender', { retries: 0 });
     });
+
+    it('can use supervisor\'s noticeboard cache', function( done ){
+
+      this.timeout( 5000 );
+
+      var payload_to_cache = { success: true };
+
+      // handle citizen's response to cache test
+        supervisor.noticeboard.watch( 'supervisor-message', 'assess-cache-access', access_cache_access );
+
+      // cache payload
+        supervisor.noticeboard.notify( 'sample-notice', payload_to_cache );
+
+      supervisor.start( 'cache-accesser', './test/citizen/cache-accesser' );
+
+      function access_cache_access( msg ){
+
+        var envelope = msg.notice;
+
+        if( envelope.type !== 'mail' ) return;
+        if( envelope.from !== 'cache-accesser' ) return;
+
+        var response = envelope.msg.received,
+            payload_matches_cache = true;
+
+        for( var key in payload_to_cache ){
+          if( ! payload_to_cache.hasOwnProperty( key ) ) continue;
+
+          if( ! response.hasOwnProperty( key ) ) payload_matches_cache = false;
+          if( payload_to_cache[ key ] != response[ key ] ) payload_matches_cache = false;
+
+          break;
+        }
+
+        if( payload_matches_cache ) done();
+      }
+    });
   });
 });
