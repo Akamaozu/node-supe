@@ -466,25 +466,18 @@ describe('Supe Test Suite', function(){
           second_citizen_name = 'second-crasher',
           crashes_detected = 0;
 
-      supervisor.noticeboard.watch( 'citizen-crashed', 'do-assertions', function( msg ){
+      supervisor.noticeboard.watch( 'citizen-crashed', 'do-assertions', function(){
 
         crashes_detected += 1;
 
-        var details = msg.notice;
+        if( crashes_detected < 2 ) return;
 
-        if( details.name !== second_citizen_name ) return;
-        
         assert.equal( crashes_detected === 2, true, 'did not detect all citizen crashes' );
-        assert.equal( details.name === second_citizen_name, true, 'did not detect expected citizen crash' );
-        
         done();
       });
 
       supervisor.start( first_citizen_name, './test/citizen/one-time-crasher' );
-
-      setTimeout( function(){
-        supervisor.start( second_citizen_name, './test/citizen/one-time-crasher' );
-      }, 2000 );
+      supervisor.start( second_citizen_name, './test/citizen/one-time-crasher' );
     });
 
     it('sends notice "(name)-auto-restarted" when crashed citizen is restarted', function( done ){
@@ -506,31 +499,24 @@ describe('Supe Test Suite', function(){
 
     it('sends notice "citizen-auto-restarted" when any crashed citizen is restarted', function( done ){
 
-      this.timeout( 15000 );
+      this.timeout( 5000 );
       
       var first_citizen_name = 'first-crasher',
           second_citizen_name = 'second-crasher',
-          crashes_detected = 0;
+          restarts_detected = 0;
 
       supervisor.noticeboard.watch( 'citizen-auto-restarted', 'do-assertions', function( msg ){
 
-        crashes_detected += 1;
+        restarts_detected += 1;
 
-        var details = msg.notice;
+        if( restarts_detected < 2 ) return;
 
-        if( details.name !== second_citizen_name ) return;
-        
-        assert.equal( crashes_detected === 2, true, 'did not detect all citizen restarts' );
-        assert.equal( details.name === second_citizen_name, true, 'did not detect expected citizen crash' );
-        
+        assert.equal( restarts_detected === 2, true, 'did not detect all citizen restarts' );        
         done();
       });
 
       supervisor.start( first_citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
-
-      setTimeout( function(){
-        supervisor.start( second_citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
-      }, 1000 );
+      supervisor.start( second_citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
     });
   });
 
@@ -567,7 +553,7 @@ describe('Supe Test Suite', function(){
       this.timeout( 0 );
 
       var citizen_name = 'crasher',
-          max_restarts = 3,
+          max_restarts = 2,
           restarts = 0;
 
       supervisor.noticeboard.watch( citizen_name + '-auto-restarted', 'count-auto-restarts', function(){
@@ -579,12 +565,12 @@ describe('Supe Test Suite', function(){
 
       supervisor.noticeboard.watch( citizen_name + '-excessive-crash', 'do-assertions', function(){
 
-        // wait two seconds before doing assertions, just in case
+        // wait a second before doing assertions, just in case
           setTimeout( function(){
 
             assert.equal( restarts === max_restarts, true, 'current restarts does not match max allowed restarts' );
             done();
-          }, 2000 );
+          }, 1000 );
       });
 
       supervisor.start( citizen_name, './test/citizen/one-time-crasher', { retries: max_restarts });
