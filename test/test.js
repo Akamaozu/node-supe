@@ -211,11 +211,27 @@ describe('Supe Test Suite', function(){
             first_pid = first_start.ref.pid;
       });
 
-      it('will not restart a currently-running citizen', function(){
+      it('will not restart a currently-running citizen', function( done ){
 
-        var new_logger = supervisor.start( 'logger' );
+        var new_citizen_started = false,
+            test_completed = false;
 
-        assert.equal( Object.prototype.toString.call( new_logger) !== ['object Object'], true, 'restarted currently-running process' );
+        supervisor.noticeboard.watch( 'logger-started', 'fail-test', function(){
+          new_citizen_started = true;
+          complete_test();
+        });
+
+        setTimeout( complete_test, 1000 );
+
+        supervisor.start( 'logger' );
+
+        function complete_test(){
+          if( test_completed ) return;
+          test_completed = true;
+
+          assert.equal( new_citizen_started, false, 'restarted currently-running process' );
+          done();
+        }
       });
     });
 
