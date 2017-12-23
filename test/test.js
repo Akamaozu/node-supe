@@ -16,7 +16,12 @@ describe('Supe Test Suite', function(){
     var supervisor = supe(),
         expected_properties = [ 'is_registered', 'register', 'start', 'get', 'use', 'noticeboard', 'middleware' ];
 
-    it('has its own "register" function', function(){   
+    it('has its own "is_registered" function', function(){
+
+      assert.equal( supervisor.hasOwnProperty('is_registered') && typeof supervisor.is_registered === 'function', true, 'didn\'t instantiate with its own "is_registered" function');
+    });
+
+    it('has its own "register" function', function(){
 
       assert.equal( supervisor.hasOwnProperty('register') && typeof supervisor.register === 'function', true, 'didn\'t instantiate with its own "register" function');
     });
