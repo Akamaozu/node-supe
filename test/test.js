@@ -57,6 +57,33 @@ describe('Supe Test Suite', function(){
 
   describe('Supervisor Functions Behavior', function(){
 
+    describe('Supervisor.is_registered', function(){
+      var citizen_name = 'logger',
+          supervisor;
+
+      before( function(){
+        supervisor = supe();
+        supervisor.register( citizen_name, './test/citizen/interval-logger' );
+      });
+
+      it('returns true if citizen is registered', function(){
+        assert.equal( supervisor.is_registered( citizen_name ), true, 'did not return true for registered citizen name' );
+      });
+
+      it('returns false is citizen is not registered', function(){
+        assert.equal( supervisor.is_registered( 'unregistered-citizen' ), false, 'did not return false for unregistered citizen name' );
+      });
+
+      it('returns false if given citizen name is not a string', function(){
+        var nonstrings = [ 1, [], {}, function(){} ];
+
+        nonstrings.forEach( function( nonstring ){
+          var registered = supervisor.is_registered( nonstring );
+          assert.equal( registered, false, 'citizen was registered with a non-string name parameter' );
+        });
+      });
+    });
+
     describe('Supervisor.register', function(){
       
       var supervisor,
