@@ -17,49 +17,40 @@ describe('Supe Test Suite', function(){
         expected_properties = [ 'is_registered', 'register', 'start', 'get', 'use', 'noticeboard', 'middleware' ];
 
     it('has its own "is_registered" function', function(){
-
       assert.equal( supervisor.hasOwnProperty('is_registered') && typeof supervisor.is_registered === 'function', true, 'didn\'t instantiate with its own "is_registered" function');
     });
 
     it('has its own "register" function', function(){
-
       assert.equal( supervisor.hasOwnProperty('register') && typeof supervisor.register === 'function', true, 'didn\'t instantiate with its own "register" function');
     });
 
-    it('has its own "start" function', function(){   
-
+    it('has its own "start" function', function(){
       assert.equal( supervisor.hasOwnProperty('start') && typeof supervisor.start === 'function', true, 'didn\'t instantiate with its own "start" function');
     });
 
-    it('has its own "get" function', function(){   
-
+    it('has its own "get" function', function(){
       assert.equal( supervisor.hasOwnProperty('get') && typeof supervisor.get === 'function', true, 'didn\'t instantiate with its own "get" function');
     });
 
-    it('has its own "use" function', function(){   
-
+    it('has its own "use" function', function(){
       assert.equal( supervisor.hasOwnProperty('use') && typeof supervisor.use === 'function', true, 'didn\'t instantiate with its own "get" function');
     });
 
-    it('has its own "noticeboard" object', function(){   
-
+    it('has its own "noticeboard" object', function(){
       assert.equal( supervisor.hasOwnProperty('noticeboard') && Object.prototype.toString.call( supervisor.noticeboard ) === '[object Object]', true, 'didn\'t instantiate with its own "noticeboard" object');
     });
 
-    it('has its own "middleware" object', function(){   
-
+    it('has its own "middleware" object', function(){
       assert.equal( supervisor.hasOwnProperty('middleware') && Object.prototype.toString.call( supervisor.middleware ) === '[object Object]', true, 'didn\'t instantiate with its own "noticeboard" object');
     });
 
     it('has no unexpected properties', function(){
-
       for( var prop in supervisor ){
         assert.equal( expected_properties.indexOf( prop ) > -1, true, 'has unexpected property "' + prop + '"' );
       }
     });
 
-    it('"noticeboard" is an instance of cjs-noticeboard', function(){   
-
+    it('"noticeboard" is an instance of cjs-noticeboard', function(){
       assert.equal( supervisor.noticeboard instanceof require('cjs-noticeboard'), true, 'not an instance of cjs-noticeboard');
     });
   });
