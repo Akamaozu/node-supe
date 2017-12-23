@@ -7,7 +7,7 @@ supe.mail.receive( function( envelope, ack ){
     case 'pause':
     case 'PAUSE':
 
-      var pause_duration_ms = 3000;
+      var pause_duration_ms = 1000;
 
       supe.mail.pause();
 
@@ -26,4 +26,4 @@ supe.mail.receive( function( envelope, ack ){
 });
 
 // wait ten secs before shutting down
-  setTimeout( process.exit, 20000 );
+  setTimeout( process.exit, 10000 );
