@@ -536,6 +536,38 @@ describe('Supe Test Suite', function(){
     });
   });
 
+  describe('Citizen Properties', function(){
+    var supervisor,
+        key_analyzer;
+
+    beforeEach( function(){
+      supervisor = supe();
+      key_analyzer = supervisor.start( 'key-analyzer', './test/citizen/key-analyzer' );
+    });
+
+    it( 'has its own "get_name" function', function( done ){
+      var key = 'get_name',
+          expected_typeof = 'function';
+
+      supervisor.noticeboard.watch( 'supervisor-message', 'process-analysis', function( msg ){
+        var envelope = msg.notice,
+            message = envelope.msg;
+
+        if( ! message.type || message.type !== 'key-analysis' ) return;
+
+        var analysis = message;
+        if( analysis.key != key ) return;
+        if( analysis.success != true ) throw new Error( 'citizen analysis of supe key "' + analysis.key + '" failed' );
+
+        assert.equal( analysis.exists, true, '"' + key + '" does not exist on citizen supe instance' );
+        assert.equal( analysis.typeof, expected_typeof, '"' + key + '" is not a ' + expected_typeof );
+        done();
+      });
+
+      key_analyzer.mail.send( key );
+    });
+  });
+
   describe('Supervisor Behavior', function(){
 
     this.timeout( 10000 );
