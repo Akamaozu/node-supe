@@ -769,7 +769,6 @@ describe('Supe Test Suite', function(){
   });
 
   describe('Citizen Noticeboard Integration', function(){
-
     var supervisor;
     
     beforeEach( function(){
@@ -851,44 +850,34 @@ describe('Supe Test Suite', function(){
     });
 
     it('will ignore duplicate notice pipe requests to supervisor\'s noticeboard', function( done ){
-
       this.timeout(10000);
 
       var sample_notice = 'sample-notice',
-          failed = false;
+          failed = false,
+          citizen;
 
       supervisor.noticeboard.notify( sample_notice, 42 );
-
-      supervisor.noticeboard.watch( 'double-piper-output', 'print', function( msg ){
-        var output = msg.notice;
-        console.log( 'output: ', output.output );
-      });
-
-      supervisor.noticeboard.watch( 'double-piper-error', 'print', function( msg ){
-        var output = msg.notice;
-        console.log( 'error: ', output.error );
-      });
 
       supervisor.noticeboard.watch( 'double-piper-crashed', 'fail-test', function(){
         failed = true;
         console.log( 'double piper crashed' );
       });
 
-      supervisor.start( 'double-piper', './test/citizen/duplicate-notice-sender', { retries: 0 });
+      citizen = supervisor.start( 'double-piper', './test/citizen/duplicate-notice-sender', { retries: 0 });
 
       setTimeout( function(){
-
         assert.equal( failed, false );
         done();
+
+        // cleanup
+          citizen.ref.kill();
       }, 3000 );
     });
 
     it('can post a notice on supervisor\'s noticeboard', function( done ){
-
       this.timeout( 10000 );
 
       supervisor.noticeboard.watch( 'sample-notice-from-citizen', 'do-assertions', function( msg ){
-        
         done();
       });
 
