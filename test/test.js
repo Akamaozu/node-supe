@@ -446,32 +446,29 @@ describe('Supe Test Suite', function(){
     });
 
     it('sends notice "citizen-shutdown" when any citizen shuts down', function( done ){
-
-      this.timeout( 15000 );
+      this.timeout( 10000 );
       
       var first_citizen_name = 'first-logger',
           second_citizen_name = 'second-logger',
-          shutdowns_detected = 0;
+          shutdowns_detected = 0,
+          shutdowns = [];
 
       supervisor.noticeboard.watch( 'citizen-shutdown', 'do-assertions', function( msg ){
-
         shutdowns_detected += 1;
 
-        var details = msg.notice;
+        var citizen_name = msg.notice.name;
+        shutdowns.push( citizen_name );
 
-        if( details.name !== second_citizen_name ) return;
+        if( shutdowns_detected < 2 ) return;
+
+        var detected_shutdown_from_both_citizens = shutdowns.indexOf( first_citizen_name ) > -1 && shutdowns.indexOf( second_citizen_name ) > -1;
         
-        assert.equal( shutdowns_detected === 2, true, 'did not detect all citizen shutdowns' );
-        assert.equal( details.name === second_citizen_name, true, 'did not detect expected citizen shutdown' );
-        
+        assert.equal( detected_shutdown_from_both_citizens, true, 'did not detect expected citizen shutdown' );        
         done();
       });
 
       supervisor.start( first_citizen_name, './test/citizen/one-time-logger' );
-
-      setTimeout( function(){
-        supervisor.start( second_citizen_name, './test/citizen/one-time-logger' );
-      }, 2000 );
+      supervisor.start( second_citizen_name, './test/citizen/one-time-logger' );
     });
 
     it('sends notice "(name)-crashed" on crash', function( done ){
@@ -613,15 +610,13 @@ describe('Supe Test Suite', function(){
     });
 
     it('will not automatically restart citizen that crashed excessively', function( done ){
-
-      this.timeout( 0 );
+      this.timeout( 10000 );
 
       var citizen_name = 'crasher',
           max_restarts = 2,
           restarts = 0;
 
       supervisor.noticeboard.watch( citizen_name + '-auto-restarted', 'count-auto-restarts', function(){
-
         restarts += 1;
 
         if( restarts > max_restarts ) done( new Error( 'restarted citizen more than permitted amount of times' ) );
@@ -858,9 +853,8 @@ describe('Supe Test Suite', function(){
 
       supervisor.noticeboard.notify( sample_notice, 42 );
 
-      supervisor.noticeboard.watch( 'double-piper-crashed', 'fail-test', function(){
+      supervisor.noticeboard.once( 'double-piper-crashed', 'fail-test', function(){
         failed = true;
-        console.log( 'double piper crashed' );
       });
 
       citizen = supervisor.start( 'double-piper', './test/citizen/duplicate-notice-sender', { retries: 0 });
