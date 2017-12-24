@@ -85,28 +85,23 @@ describe('Supe Test Suite', function(){
     });
 
     describe('Supervisor.register', function(){
-      
       var supervisor,
           new_process; 
 
       beforeEach( function(){
-
         supervisor = supe();
         new_process = supervisor.register( 'logger', './test/citizen/interval-logger' );
       });
 
       it('returns an object (citizen)', function( done ){
-
         assert.equal( Object.prototype.toString.call( new_process ) === '[object Object]', true, 'did not return an object' );
         setTimeout( done, 0 );
       });
 
       it('will not create a new citizen without name parameter', function(){
-
         var crashed = false;
 
         try{
-
           supervisor.register( null, './test/citizen/interval-logger' );
         }
 
@@ -116,11 +111,9 @@ describe('Supe Test Suite', function(){
       });
 
       it('will not create a new citizen without file parameter', function(){
-
         var failed = false;
 
         try{
-
           supervisor.register( 'fileless-citizen' );
         }
 
@@ -130,15 +123,12 @@ describe('Supe Test Suite', function(){
       });
 
       it('will not create a new citizen if file parameter is not a string', function(){
-
         var nonstrings = [ 1, [], {}, function(){} ];
 
         nonstrings.forEach( function( nonstring ){
-
           var failed = false;
 
           try{
-
             supervisor.register( 'nonstring-file-citizen' );
           }
 
@@ -149,15 +139,12 @@ describe('Supe Test Suite', function(){
       });
 
       it('will not create a new citizen if name is associated with a different citizen', function(){
-
         var overwrite_error = false;
 
         supervisor.register( 'common-citizen', './test/citizen/one-time-logger' );
 
         try{
-
           common_citizen_2 = supervisor.register( 'common-citizen', './test/citizen/interval-logger' );
-          console.log(  common_citizen_2 );
         }
 
         catch( e ){ overwrite_error = true; }
@@ -166,13 +153,10 @@ describe('Supe Test Suite', function(){
       });
 
       it('will pass parameters to citizen\'s config', function(){
-
-        var supervisor = supe(),
-            params = { retries: 5, duration: 5, happy: true },
+        var params = { retries: 5, duration: 5, happy: true },
             citizen = supervisor.register( 'custom-logger', './test/citizen/one-time-logger', params );
 
         for( var prop in params ){
-
           if( !params.hasOwnProperty( prop ) ) continue;
 
           assert.equal( citizen.config.hasOwnProperty( prop ), true, 'citizen config does not have expected property "' + prop + '"' );            
@@ -181,7 +165,6 @@ describe('Supe Test Suite', function(){
       });
 
       it('will override default citizen\'s config', function(){
-
         var supervisor = supe(),
             default_logger = supervisor.register( 'default-logger', './test/citizen/one-time-logger' ),
             custom_logger = supervisor.register( 'custom-logger', './test/citizen/one-time-logger', { retries: 5, duration: 5, happy: true });
@@ -190,15 +173,18 @@ describe('Supe Test Suite', function(){
       });
     });
 
-    describe('Supervisor.start', function(){
-      
+    describe('Supervisor.start', function(){      
       var supervisor,
           new_process; 
 
       beforeEach( function(){
-
         supervisor = supe();
         new_process = supervisor.start( 'logger', './test/citizen/interval-logger' );
+      });
+
+      afterEach( function(){
+        new_process.ref.kill();
+        new_process = null;
       });
 
       it('citizen has a process reference ("ref" property)', function(){
@@ -214,28 +200,48 @@ describe('Supe Test Suite', function(){
       });
 
       it('will restart a previously-started citizen', function( done ){
-
         this.timeout( 10000 );
 
-        supervisor.noticeboard.watch( 'citizen-shutdown', 'start-tests', function( msg ){
+        var citizen_name = 'one-time-logger',
+            citizen = supervisor.register( citizen_name, './test/citizen/one-time-logger' ),
+            first_start_ref,
+            second_start_ref,
+            started = 0;
 
-          var second_start = supervisor.start( 'one-time-logger' );
+        supervisor.noticeboard.watch( citizen_name + '-started', 'do-assertions', function( msg ){
+          started += 1;
 
-          assert.equal( Object.prototype.toString.call( second_start ) === '[object Object]', true, 'second start attempt did not return an object as expected' );
-          assert.equal( second_start.hasOwnProperty( 'ref' ), true, 'second start attempt did not return with a process reference (property "ref")' );
-          assert.equal( first_pid !== second_start.ref.pid || first_start.ref !== second_start.ref, true, 'first and second start are the same instance' );
+          switch( started ){
+            case 1:
+              first_start_ref = citizen.ref;
 
-          supervisor.noticeboard.ignore( 'citizen-shutdown', 'start-tests' );
+              supervisor.noticeboard.once( citizen_name + '-shutdown', 'restart-citizen', function(){
+                supervisor.start( citizen_name );
+              });              
+            break;
 
-          done();
+            case 2:
+              supervisor.noticeboard.ignore( citizen_name + '-started', 'do-assertions' );
+
+              second_start_ref = citizen.ref;
+
+              assert.equal( first_start_ref !== second_start_ref, true, 'first and second start refer to the same process instance' );
+              done();
+
+              // cleanup
+                citizen.ref.kill();              
+            break;
+
+            default:
+              throw new Error( 'citizen "' + citizen_name + '" started more times than expected' );
+            break;
+          }
         });
 
-        var first_start = supervisor.start( 'one-time-logger', './test/citizen/one-time-logger' ),
-            first_pid = first_start.ref.pid;
+        supervisor.start( citizen_name );
       });
 
       it('will not restart a currently-running citizen', function( done ){
-
         var new_citizen_started = false,
             test_completed = false;
 
@@ -244,12 +250,13 @@ describe('Supe Test Suite', function(){
           complete_test();
         });
 
-        setTimeout( complete_test, 1000 );
+        setTimeout( complete_test, 888 );
 
         supervisor.start( 'logger' );
 
         function complete_test(){
           if( test_completed ) return;
+
           test_completed = true;
 
           assert.equal( new_citizen_started, false, 'restarted currently-running process' );
@@ -259,30 +266,28 @@ describe('Supe Test Suite', function(){
     });
 
     describe('Supervisor.get', function(){
-
-      supervisor = supe();
+      var supervisor = supe();
 
       it('returns citizen with given name if it exists', function(){
-
         var citizen = supervisor.start( 'logger', './test/citizen/interval-logger' ),
             get_val = supervisor.get( 'logger' );
 
         assert.equal( citizen === get_val, true, 'get return value does not match created citizen' );
+
+        // cleanup
+          citizen.ref.kill();
       });
 
       it('returns false if citizen with given name does not exist', function(){
-
         var get_val = supervisor.get( 'non-existent-logger' );
 
         assert.equal( Object.prototype.toString.call( get_val ) !== ['object Object'], true, 'returned an object, not false' );
       });
 
       it('returns false if given name is not a string', function(){
-
         var non_strings = [ 1, {}, [], null, false, NaN ];
 
         non_strings.forEach( function( non_string ){
-
           var get_val = supervisor.get( non_string );
 
           assert.equal( Object.prototype.toString.call( get_val ) !== ['object Object'], true, 'returned an object, not false' );
@@ -291,25 +296,22 @@ describe('Supe Test Suite', function(){
     });
 
     describe('Supervisor.use', function(){
-
-      supervisor = supe();
+      var supervisor = supe();
 
       it('executes given function with current Supervisor as first argument', function(){
+        var unique_key = Date.now();
 
-        var unique = Date.now(),
-            module = function( supe ){
-
-            supe.is_same_instance = unique;
-          }
-
-        supervisor.use( module );
+        supervisor.use( set_unique_key_module );
 
         assert.equal( supervisor.hasOwnProperty( 'is_same_instance' ) === true, true, 'supervisor instance does not have prop "is_same_instance"' );
-        assert.equal( supervisor.is_same_instance === unique, true, 'supervisor prop "is_same_instance" does not match expected value' );
+        assert.equal( supervisor.is_same_instance === unique_key, true, 'supervisor prop "is_same_instance" does not match expected value' );
+
+        function set_unique_key_module( supe ){
+          supe.is_same_instance = unique_key;
+        }
       });
 
       it('does nothing and returns false if first argument is false-y', function(){
-
         var falsey_values = [ false, 0, '', null, undefined ];
 
         falsey_values.forEach( function( falsey ){
@@ -318,7 +320,6 @@ describe('Supe Test Suite', function(){
       });
 
       it('throws an error if first argument is not a function', function(){
-
         var non_functions = [
           { type: 'number', val: 1 },
           { type: 'string', val: '1' },
@@ -327,7 +328,6 @@ describe('Supe Test Suite', function(){
         ]
 
         non_functions.forEach( function( non_func ){
-
           var error_thrown = false;
 
           try {
@@ -344,7 +344,6 @@ describe('Supe Test Suite', function(){
   });
 
   describe('Supervisor Noticeboard Integration', function(){
-
     var supervisor;
     
     beforeEach( function(){
@@ -352,14 +351,11 @@ describe('Supe Test Suite', function(){
     });
 
     it('sends notice "(name)-registered" when citizen is registered', function( done ){
-
-      this.timeout( 10000 );
-
       var registered = false;
 
       supervisor.noticeboard.once( 'one-time-crasher-registered', 'do-assertions', function( msg ){
-
         registered = true;
+
         assert.equal( registered, true, 'did not detect specific citizen registration' );
         done();
       });
@@ -368,7 +364,6 @@ describe('Supe Test Suite', function(){
     });
 
     it('sends notice "citizen-registered" when any citizen is registered', function( done ){
-
       this.timeout( 10000 );
       
       var first_citizen_name = 'first-crasher',
@@ -376,7 +371,6 @@ describe('Supe Test Suite', function(){
           registrations_detected = 0;
 
       supervisor.noticeboard.watch( 'citizen-registered', 'do-assertions', function( msg ){
-
         registrations_detected += 1;
 
         var details = msg.notice;
@@ -394,23 +388,24 @@ describe('Supe Test Suite', function(){
     });
 
     it('sends notice "(name)-started" when citizen is started', function( done ){
-
       this.timeout( 10000 );
 
       var started = false;
 
       supervisor.noticeboard.once( 'one-time-crasher-started', 'do-assertions', function( msg ){
-
         started = true;
+
         assert.equal( started, true, 'did not detect specific citizen start-up' );
         done();
+
+        // cleanup
+          supervisor.get( 'one-time-crasher' ).ref.kill();
       });
 
       supervisor.start( 'one-time-crasher', './test/citizen/one-time-crasher', { retries: 0 } );
     });
 
     it('sends notice "citizen-started" when any citizen is started', function( done ){
-
       this.timeout( 10000 );
       
       var first_citizen_name = 'first-crasher',
@@ -436,13 +431,11 @@ describe('Supe Test Suite', function(){
     });
 
     it('sends notice "(name)-shutdown" when a citizen shuts down', function( done ){
-
       this.timeout( 15000 );
       
       var detected_shutdown = false;
 
       supervisor.noticeboard.watch( 'one-time-logger-shutdown', 'do-assertions', function( msg ){
-
         detected_shutdown = true;
         
         assert.equal( detected_shutdown === true, true, 'did not detect specific citizen shutdown' );
@@ -726,9 +719,13 @@ describe('Supe Test Suite', function(){
   });
 
   describe('Citizen Behavior', function(){
+    var supervisor;
+
+    beforeEach( function(){
+      supervisor = supe();
+    });
 
     it('can pause flow of inbound mail', function( done ){
-
       this.timeout( 10000 );
 
       var name = 'pauser',
@@ -758,6 +755,9 @@ describe('Supe Test Suite', function(){
 
           assert.equal( processed >= pause_duration_ms, true, 'mail was processed in ' + processed + 'ms but pause duration is ' + pause_duration_ms + 'ms' );          
           done();
+
+          // cleanup
+            citizen.ref.kill();
         }
       });
 
