@@ -777,77 +777,77 @@ describe('Supe Test Suite', function(){
     });
 
     it('can watch a notice on supervisor\'s noticeboard', function( done ){
-
-      var sample_notice = 'sample-notice',
-          sample_message = 'hello citizen';
-
       this.timeout( 10000 );
 
-      supervisor.noticeboard.watch( 'citizen-output', 'log', function( msg ){
+      var citizen_name = 'notice-receiver',
+          sample_notice = 'sample-notice',
+          sample_message = 'hello citizen',
+          citizen;
 
-        console.log( '[' + msg.notice.name + '] ' + msg.notice.output );
+      supervisor.noticeboard.watch( 'ready-to-receive-notices', 'send-sample-notice', function( msg ){
+        var ready_citizen = msg.notice.citizen;
+        if( ready_citizen !== citizen_name ) return;
+
+        supervisor.noticeboard.notify( sample_notice, sample_message );
+        supervisor.noticeboard.ignore( 'ready-to-receive-notices', 'send-sample-notice' );
       });
 
       supervisor.noticeboard.watch( 'supervisor-message', 'do-assertions', function( msg ){
-
         if( msg.notice.type !== 'mail' ) return;
 
         var content = msg.notice.msg;
-
         if( !content.received || !content.notice ) return;
 
         assert.equal( content.notice, sample_notice, 'received notice is not what was sent' );
         assert.equal( content.received, sample_message, 'received message is not what was sent' );
 
         done();
+
+        // cleanup
+          citizen.ref.kill();
       });
 
-      supervisor.start( 'notice-receiver', './test/citizen/notice-receiver', { retries: 0 });
-
-      setTimeout( function(){
-
-        supervisor.noticeboard.notify( sample_notice, sample_message );
-      }, 3000 );
+      citizen = supervisor.start( citizen_name, './test/citizen/notice-receiver', { retries: 0 });
     });
 
     it('can "watch once" a notice on supervisor\'s noticeboard', function( done ){
-
-      var sample_notice = 'sample-notice',
-          sample_message = 'hello citizen',
-          citizen_responses = 0;
-
       this.timeout( 10000 );
 
-      supervisor.noticeboard.watch( 'citizen-output', 'log', function( msg ){
+      var citizen_name = 'notice-receiver',
+          sample_notice = 'sample-notice',
+          sample_message = 'hello citizen',
+          citizen_responses = 0,
+          citizen;
 
-        console.log( '[' + msg.notice.name + '] ' + msg.notice.output );
+      supervisor.noticeboard.watch( 'ready-to-receive-notices', 'send-sample-notices', function( msg ){
+        var ready_citizen = msg.notice.citizen;
+        if( ready_citizen != citizen_name ) return;
+
+        supervisor.noticeboard.notify( sample_notice, sample_message );
+        supervisor.noticeboard.notify( sample_notice, sample_message );
+        supervisor.noticeboard.notify( sample_notice, sample_message );
+
+        supervisor.noticeboard.ignore( 'ready-to-receive-notices', 'send-sample-notices' );
       });
 
       supervisor.noticeboard.watch( 'supervisor-message', 'do-assertions', function( msg ){
-
         if( msg.notice.type !== 'mail' ) return;
 
         var content = msg.notice.msg;
-
         if( !content.received || !content.notice ) return;
 
         citizen_responses += 1;
       });
 
-      supervisor.start( 'notice-receiver', './test/citizen/notice-once-receiver', { retries: 0 });
+      citizen = supervisor.start( citizen_name, './test/citizen/notice-once-receiver', { retries: 0 });
 
       setTimeout( function(){
-
-        supervisor.noticeboard.notify( sample_notice, sample_message );
-        supervisor.noticeboard.notify( sample_notice, sample_message );
-        supervisor.noticeboard.notify( sample_notice, sample_message );
-      }, 3000 );
-
-      setTimeout( function(){
-
         assert.equal( citizen_responses, 1 );
         done();
-      }, 9000 );
+
+        // cleanup
+          citizen.ref.kill();
+      }, 1500 );
     });
 
     it('will ignore duplicate notice pipe requests to supervisor\'s noticeboard', function( done ){
