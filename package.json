@@ -5,7 +5,8 @@
   "main": "index.js",
   "dependencies": {
     "cjs-noticeboard": "0.0.7",
-    "merge-objects": "^1.0.5"
+    "merge-objects": "^1.0.5",
+    "require-directory": "^2.1.1"
   },
   "devDependencies": {
     "coveralls": "^2.11.15",
