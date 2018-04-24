@@ -559,6 +559,8 @@ describe('Supe Test Suite', function(){
     });
 
     it( 'has its own "get_name" function', function( done ){
+      this.timeout( 5000 );
+
       var key = 'get_name',
           expected_typeof = 'function';
 
