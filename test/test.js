@@ -14,7 +14,7 @@ describe('Supe Test Suite', function(){
   describe('Supervisor (Instantiated Supe) Properties', function(){
 
     var supervisor = supe(),
-        expected_properties = [ 'is_registered', 'register', 'start', 'get', 'use', 'noticeboard', 'hook' ];
+        expected_properties = [ 'is_registered', 'register', 'deregister', 'start', 'stop', 'get', 'use', 'noticeboard', 'hook' ];
 
     it('has its own "is_registered" function', function(){
       assert.equal( supervisor.hasOwnProperty('is_registered') && typeof supervisor.is_registered === 'function', true, 'didn\'t instantiate with its own "is_registered" function');
@@ -24,8 +24,16 @@ describe('Supe Test Suite', function(){
       assert.equal( supervisor.hasOwnProperty('register') && typeof supervisor.register === 'function', true, 'didn\'t instantiate with its own "register" function');
     });
 
+    it('has its own "deregister" function', function(){
+      assert.equal( supervisor.hasOwnProperty('deregister') && typeof supervisor.deregister === 'function', true, 'didn\'t instantiate with its own "deregister" function');
+    });
+
     it('has its own "start" function', function(){
       assert.equal( supervisor.hasOwnProperty('start') && typeof supervisor.start === 'function', true, 'didn\'t instantiate with its own "start" function');
+    });
+
+    it('has its own "stop" function', function(){
+      assert.equal( supervisor.hasOwnProperty('stop') && typeof supervisor.stop === 'function', true, 'didn\'t instantiate with its own "stop" function');
     });
 
     it('has its own "get" function', function(){
@@ -86,7 +94,7 @@ describe('Supe Test Suite', function(){
 
     describe('Supervisor.register', function(){
       var supervisor,
-          new_process; 
+          new_process;
 
       beforeEach( function(){
         supervisor = supe();
@@ -159,8 +167,8 @@ describe('Supe Test Suite', function(){
         for( var prop in params ){
           if( !params.hasOwnProperty( prop ) ) continue;
 
-          assert.equal( citizen.config.hasOwnProperty( prop ), true, 'citizen config does not have expected property "' + prop + '"' );            
-          assert.equal( citizen.config[ prop ] === params[ prop ], true, 'parameter property "' + prop + '" does not match citizen config\'s "' + prop + '"' );            
+          assert.equal( citizen.config.hasOwnProperty( prop ), true, 'citizen config does not have expected property "' + prop + '"' );
+          assert.equal( citizen.config[ prop ] === params[ prop ], true, 'parameter property "' + prop + '" does not match citizen config\'s "' + prop + '"' );
         }
       });
 
@@ -173,9 +181,9 @@ describe('Supe Test Suite', function(){
       });
     });
 
-    describe('Supervisor.start', function(){      
+    describe('Supervisor.start', function(){
       var supervisor,
-          new_process; 
+          new_process;
 
       beforeEach( function(){
         supervisor = supe();
@@ -217,7 +225,7 @@ describe('Supe Test Suite', function(){
 
               supervisor.noticeboard.once( citizen_name + '-shutdown', 'restart-citizen', function(){
                 supervisor.start( citizen_name );
-              });              
+              });
             break;
 
             case 2:
@@ -229,7 +237,7 @@ describe('Supe Test Suite', function(){
               done();
 
               // cleanup
-                citizen.ref.kill();              
+                citizen.ref.kill();
             break;
 
             default:
@@ -345,7 +353,7 @@ describe('Supe Test Suite', function(){
 
   describe('Supervisor Noticeboard Integration', function(){
     var supervisor;
-    
+
     beforeEach( function(){
       supervisor = supe({ retries: 0 });
     });
@@ -365,7 +373,7 @@ describe('Supe Test Suite', function(){
 
     it('sends notice "citizen-registered" when any citizen is registered', function( done ){
       this.timeout( 10000 );
-      
+
       var first_citizen_name = 'first-crasher',
           second_citizen_name = 'second-crasher',
           registrations_detected = 0;
@@ -376,10 +384,10 @@ describe('Supe Test Suite', function(){
         var details = msg.notice;
 
         if( details.name !== second_citizen_name ) return;
-        
+
         assert.equal( registrations_detected === 2, true, 'did not detect all citizen registrations' );
         assert.equal( details.name === second_citizen_name, true, 'did not detect expected citizen registration' );
-        
+
         done();
       });
 
@@ -407,7 +415,7 @@ describe('Supe Test Suite', function(){
 
     it('sends notice "citizen-started" when any citizen is started', function( done ){
       this.timeout( 10000 );
-      
+
       var first_citizen_name = 'first-crasher',
           second_citizen_name = 'second-crasher',
           startups_detected = 0;
@@ -419,10 +427,10 @@ describe('Supe Test Suite', function(){
         var details = msg.notice;
 
         if( details.name !== second_citizen_name ) return;
-        
+
         assert.equal( startups_detected === 2, true, 'did not detect all citizen start' );
         assert.equal( details.name === second_citizen_name, true, 'did not detect expected citizen start' );
-        
+
         done();
       });
 
@@ -432,12 +440,12 @@ describe('Supe Test Suite', function(){
 
     it('sends notice "(name)-shutdown" when a citizen shuts down', function( done ){
       this.timeout( 15000 );
-      
+
       var detected_shutdown = false;
 
       supervisor.noticeboard.watch( 'one-time-logger-shutdown', 'do-assertions', function( msg ){
         detected_shutdown = true;
-        
+
         assert.equal( detected_shutdown === true, true, 'did not detect specific citizen shutdown' );
         done();
       });
@@ -447,7 +455,7 @@ describe('Supe Test Suite', function(){
 
     it('sends notice "citizen-shutdown" when any citizen shuts down', function( done ){
       this.timeout( 10000 );
-      
+
       var first_citizen_name = 'first-logger',
           second_citizen_name = 'second-logger',
           shutdowns_detected = 0,
@@ -462,8 +470,8 @@ describe('Supe Test Suite', function(){
         if( shutdowns_detected < 2 ) return;
 
         var detected_shutdown_from_both_citizens = shutdowns.indexOf( first_citizen_name ) > -1 && shutdowns.indexOf( second_citizen_name ) > -1;
-        
-        assert.equal( detected_shutdown_from_both_citizens, true, 'did not detect expected citizen shutdown' );        
+
+        assert.equal( detected_shutdown_from_both_citizens, true, 'did not detect expected citizen shutdown' );
         done();
       });
 
@@ -490,7 +498,7 @@ describe('Supe Test Suite', function(){
     it('sends notice "citizen-crashed" when any citizen crashes', function( done ){
 
       this.timeout( 15000 );
-      
+
       var first_citizen_name = 'first-crasher',
           second_citizen_name = 'second-crasher',
           crashes_detected = 0;
@@ -529,7 +537,7 @@ describe('Supe Test Suite', function(){
     it('sends notice "citizen-auto-restarted" when any crashed citizen is restarted', function( done ){
 
       this.timeout( 5000 );
-      
+
       var first_citizen_name = 'first-crasher',
           second_citizen_name = 'second-crasher',
           restarts_detected = 0;
@@ -540,7 +548,7 @@ describe('Supe Test Suite', function(){
 
         if( restarts_detected < 2 ) return;
 
-        assert.equal( restarts_detected === 2, true, 'did not detect all citizen restarts' );        
+        assert.equal( restarts_detected === 2, true, 'did not detect all citizen restarts' );
         done();
       });
 
@@ -662,7 +670,7 @@ describe('Supe Test Suite', function(){
 
       var name = 'unacker',
           message = 'CRASH',
-          citizen; 
+          citizen;
 
       supervisor.noticeboard.once( name + '-crashed', 'do-assertions', function( msg ){
 
@@ -683,7 +691,7 @@ describe('Supe Test Suite', function(){
 
       var name = 'unacker',
           message = 'SHUTDOWN',
-          citizen; 
+          citizen;
 
       supervisor.noticeboard.once( name + '-shutdown', 'do-assertions', function( msg ){
 
@@ -695,7 +703,7 @@ describe('Supe Test Suite', function(){
 
       citizen = supervisor.start( name, './test/citizen/unacked-mail', { retries: 0 });
 
-      citizen.mail.send( message ); 
+      citizen.mail.send( message );
     });
 
     it('will cache citizen notices', function( done ){
@@ -750,7 +758,7 @@ describe('Supe Test Suite', function(){
           var received_at = Date.now(),
               processed = received_at - paused_at;
 
-          assert.equal( processed >= pause_duration_ms, true, 'mail was processed in ' + processed + 'ms but pause duration is ' + pause_duration_ms + 'ms' );          
+          assert.equal( processed >= pause_duration_ms, true, 'mail was processed in ' + processed + 'ms but pause duration is ' + pause_duration_ms + 'ms' );
           done();
 
           // cleanup
@@ -767,7 +775,7 @@ describe('Supe Test Suite', function(){
 
   describe('Citizen Noticeboard Integration', function(){
     var supervisor;
-    
+
     beforeEach( function(){
       supervisor = supe({ retries: 0 });
     });
