@@ -201,6 +201,50 @@ describe('Supe Test Suite', function(){
       });
     });
 
+    describe('Supervisor.deregister', function(){
+      var supervisor,
+          new_process;
+
+      beforeEach( function(){
+        supervisor = supe();
+        new_process = supervisor.register( 'logger', './test/citizen/interval-logger' );
+      } );
+
+      it('returns a Promsie', function( done ){
+        new_process
+        .then( () => {
+          assert.equal( supervisor.deregister( 'logger' ) instanceof Promise, true, 'did not return a Promise' );
+          setTimeout( done, 0 );
+        } );
+      });
+
+      it('removes a registed citizen', function( done ){
+        const citizen_name = 'logger';
+        new_process.then( () => {
+          assert.equal( supervisor.is_registered( citizen_name ), true, 'is not registerd the first time' );
+          supervisor.deregister( citizen_name )
+          .then( () => {
+            assert.equal( supervisor.is_registered( citizen_name ), false, 'citizen was not deregisterd' );
+            done();
+          })
+          .catch( () => done() );
+        } )
+        .catch( () => done() );
+      });
+
+      it('removes a running registed citizen', function( done ){
+        const citizen_name = 'logger';
+        new_process
+        .then( () => supervisor.start( citizen_name ) )
+        .then( () => supervisor.deregister( citizen_name ) )
+        .then( () => {
+          assert.equal( supervisor.is_registered( citizen_name ), false, 'citizen was not deregisterd' );
+          setTimeout( done, 0 ) ;
+        } )
+        .catch( () => setTimeout( done, 0 ) );
+      });
+    });
+
     describe('Supervisor.start', function(){
       var supervisor,
           new_process;
@@ -213,6 +257,11 @@ describe('Supe Test Suite', function(){
       afterEach( function(){
         supervisor.stop( 'logger' ).catch( () => {} );
         new_process = null;
+      });
+
+      it('returns a Promsie', function( done ){
+        assert.equal( new_process instanceof Promise, true, 'did not return a Promise' );
+        setTimeout( done, 0 );
       });
 
       it('citizen has a process reference ("ref" property)', function( done ){
@@ -261,6 +310,8 @@ describe('Supe Test Suite', function(){
         });
       });
     });
+
+
 
     describe('Supervisor.get', function(){
       var supervisor = supe();
