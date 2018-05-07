@@ -1,4 +1,4 @@
-# [Supe](../README.md) > API
+# [Supe](../../README.md) > [Core Components](../core-components.md) > Supervision
 
 ## Supervisor
 
@@ -40,4 +40,25 @@ var supervisor = require('supe')({ retries: 3, duration: 1 }),
 
 var worker2 = supervisor.start( 'worker2', 'worker.js', { retries: 20 }),
     worker3 = supervisor.start( 'worker3', 'worker.js', { duration: 1 });
+```
+
+### Supervised Supervisors
+
+Supervised scripts can supervise other scripts.
+
+```js
+// inside supervisor.js
+
+var supervisor = require('supe')();
+
+supervisor.start( 'worker', 'worker.js' );
+
+// inside worker.js
+
+var supe = require('supe'),
+    supervisor = supe();
+
+supervisor.start( 'subworker', 'sub-worker.js' );
+
+if( supe.supervised ) supe.mail.send( 'started a subworker' );
 ```
