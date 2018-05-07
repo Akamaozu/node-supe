@@ -311,7 +311,35 @@ describe('Supe Test Suite', function(){
       });
     });
 
+    describe('Supervisor.stop', function(){
+      var supervisor,
+          new_process;
 
+      beforeEach( function(){
+        supervisor = supe();
+        new_process = supervisor.start( 'logger', './test/citizen/interval-logger' );
+      });
+
+      it('returns a Promsie', function( done ){
+        new_process
+        .then( () => {
+          assert.equal( supervisor.stop( 'logger' ) instanceof Promise, true, 'did not return a Promise' );
+          setTimeout( done, 0 );
+        } );
+      });
+
+      it('stops a process', function( done ){
+        new_process.then( ( citizen ) => {
+          assert.equal( citizen.hasOwnProperty( 'ref' ), true, 'citizen does not have ref property' );
+          supervisor.stop( 'logger' )
+          .then( ( new_citzen ) => {
+            assert.equal( new_citzen.hasOwnProperty( 'ref' ), false, 'citizen still has ref property' );
+            setTimeout( done, 0 );
+          } )
+          .catch( () => setTimeout( done, 0 ) );
+        });
+      });
+    });
 
     describe('Supervisor.get', function(){
       var supervisor = supe();
