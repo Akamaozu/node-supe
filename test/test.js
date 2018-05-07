@@ -101,83 +101,103 @@ describe('Supe Test Suite', function(){
         new_process = supervisor.register( 'logger', './test/citizen/interval-logger' );
       });
 
-      it('returns an object (citizen)', function( done ){
-        assert.equal( Object.prototype.toString.call( new_process ) === '[object Object]', true, 'did not return an object' );
+      it('returns a Promsie', function( done ){
+        assert.equal( new_process instanceof Promise, true, 'did not return a Promise' );
         setTimeout( done, 0 );
       });
 
-      it('will not create a new citizen without name parameter', function(){
-        var crashed = false;
-
-        try{
-          supervisor.register( null, './test/citizen/interval-logger' );
-        }
-
-        catch( e ){ crashed = true; }
-
-        assert.equal( crashed === true , true, 'citizen was created without name parameter' );
+      it('returns an object (citizen) from Promise', function( done ){
+        new_process.then( ( citizen ) => {
+          assert.equal( Object.prototype.toString.call( citizen ) === '[object Object]', true, 'did not return an object' );
+          setTimeout( done, 0 );
+        } );
       });
 
-      it('will not create a new citizen without file parameter', function(){
-        var failed = false;
+      it('will not create a new citizen without name parameter', function( done ){
 
-        try{
-          supervisor.register( 'fileless-citizen' );
-        }
-
-        catch( e ){ failed = true }
-
-        assert.equal( failed === true, true, 'citizen was created without file parameter' );
+        supervisor.register( null, './test/citizen/interval-logger' )
+        .then( () => {
+          assert.equal( false === true , true, 'citizen was created without name parameter' );
+          setTimeout( done, 0 );
+        } )
+        .catch( ( err ) => {
+          setTimeout( done, 0 );
+        } );
       });
 
-      it('will not create a new citizen if file parameter is not a string', function(){
+      it('will not create a new citizen without file parameter', function( done ){
+
+        supervisor.register( 'fileless-citizen' )
+        .then( () => {
+          assert.equal( false === true , true, 'citizen was created without file parameter' );
+          setTimeout( done, 0 );
+        } )
+        .catch( ( err ) => {
+          setTimeout( done, 0 );
+        } );
+      });
+
+      it('will not create a new citizen if file parameter is not a string', function( done ){
         var nonstrings = [ 1, [], {}, function(){} ];
 
-        nonstrings.forEach( function( nonstring ){
-          var failed = false;
-
-          try{
-            supervisor.register( 'nonstring-file-citizen' );
-          }
-
-          catch( e ){ failed = true; }
-
-          assert.equal( failed === true, true, 'citizen was created with a non-string file parameter' );
-        });
+        Promise.all(
+          nonstrings.map(
+            ( nonstring ) => supervisor.register( 'nonstring-file-citizen', nonstring )
+          )
+        )
+        .then( () => {
+          assert.equal( false === true, true, 'citizen was created with a non-string file parameter' );
+          setTimeout( done, 0 );
+        } )
+        .catch( () => {
+          setTimeout( done, 0 );
+        } );
       });
 
-      it('will not create a new citizen if name is associated with a different citizen', function(){
+      it('will not create a new citizen if name is associated with a different citizen', function( done ){
         var overwrite_error = false;
 
-        supervisor.register( 'common-citizen', './test/citizen/one-time-logger' );
-
-        try{
-          common_citizen_2 = supervisor.register( 'common-citizen', './test/citizen/interval-logger' );
-        }
-
-        catch( e ){ overwrite_error = true; }
-
-        assert.equal( overwrite_error === true, true, 'new citizen was registered under the name of an existing citizen' );
+        supervisor.register( 'common-citizen', './test/citizen/one-time-logger' )
+        .then( () => {
+          supervisor.register( 'common-citizen', './test/citizen/interval-logger' )
+          .then( () => {
+            assert.equal( false === true, true, 'new citizen was registered under the name of an existing citizen' );
+            setTimeout( done, 0 );
+          } )
+          .catch( () => {
+            setTimeout( done, 0 );
+          } );
+        } )
+        .catch( () => {
+          assert.equal( false === true, true, 'new citizen was registered under the name of an existing citizen / fail' );
+          setTimeout( done, 0 );
+        } );
       });
 
-      it('will pass parameters to citizen\'s config', function(){
-        var params = { retries: 5, duration: 5, happy: true },
-            citizen = supervisor.register( 'custom-logger', './test/citizen/one-time-logger', params );
+      it('will pass parameters to citizen\'s config', function( done ){
+        var params = { retries: 5, duration: 5, happy: true };
+        supervisor.register( 'custom-logger', './test/citizen/one-time-logger', params )
+        .then( ( citizen ) => {
+          for( var prop in params ){
+            if( !params.hasOwnProperty( prop ) ) continue;
 
-        for( var prop in params ){
-          if( !params.hasOwnProperty( prop ) ) continue;
-
-          assert.equal( citizen.config.hasOwnProperty( prop ), true, 'citizen config does not have expected property "' + prop + '"' );
-          assert.equal( citizen.config[ prop ] === params[ prop ], true, 'parameter property "' + prop + '" does not match citizen config\'s "' + prop + '"' );
-        }
+            assert.equal( citizen.config.hasOwnProperty( prop ), true, 'citizen config does not have expected property "' + prop + '"' );
+            assert.equal( citizen.config[ prop ] === params[ prop ], true, 'parameter property "' + prop + '" does not match citizen config\'s "' + prop + '"' );
+          }
+          setTimeout( done, 0 );
+        } );
       });
 
-      it('will override default citizen\'s config', function(){
-        var supervisor = supe(),
-            default_logger = supervisor.register( 'default-logger', './test/citizen/one-time-logger' ),
-            custom_logger = supervisor.register( 'custom-logger', './test/citizen/one-time-logger', { retries: 5, duration: 5, happy: true });
-
-        assert.equal( default_logger.config !== custom_logger.config, true, 'config for default and custom loggers are identical' );
+      it('will override default citizen\'s config', function( done ){
+        var supervisor = supe();
+        supervisor.register( 'default-logger', './test/citizen/one-time-logger' )
+        .then( ( default_logger ) => {
+          supervisor.register( 'custom-logger', './test/citizen/one-time-logger', { retries: 5, duration: 5, happy: true })
+          .then( ( custom_logger ) => {
+            assert.equal( default_logger.config !== custom_logger.config, true, 'config for default and custom loggers are identical' );
+            setTimeout( done, 0 );
+          } );
+        } );
       });
     });
 
@@ -191,99 +211,71 @@ describe('Supe Test Suite', function(){
       });
 
       afterEach( function(){
-        new_process.ref.kill();
+        supervisor.stop( 'logger' ).catch( () => {} );
         new_process = null;
       });
 
-      it('citizen has a process reference ("ref" property)', function(){
-        assert.equal( new_process.hasOwnProperty( 'ref' ), true, 'citizen does not have ref property' );
+      it('citizen has a process reference ("ref" property)', function( done ){
+        new_process.then( ( citizen ) => {
+          assert.equal( citizen.hasOwnProperty( 'ref' ), true, 'citizen does not have ref property' );
+          setTimeout( done, 0 );
+        });
       });
 
-      it('citizen\'s process reference ("ref" property) is a node child_process instance', function(){
-        assert.equal( new_process.ref instanceof require('events'), true, 'citizen "ref" property is not an event emitter' );
-        assert.equal( new_process.ref.hasOwnProperty( 'stdout' ), true, 'citizen.ref does not have expected property "stdout"' );
-        assert.equal( new_process.ref.stdout instanceof require('events'), true, 'new process reference property "stdout" is not an event emitter' );
-        assert.equal( new_process.ref.hasOwnProperty( 'stderr' ), true, 'new process reference does not have expected property "stderr"' );
-        assert.equal( new_process.ref.stderr instanceof require('events'), true, 'new process reference property "stderr" is not an event emitter' );
+      it('citizen\'s process reference ("ref" property) is a node child_process instance', function( done ){
+        new_process.then( ( citizen ) => {
+          assert.equal( citizen.ref instanceof require('events'), true, 'citizen "ref" property is not an event emitter' );
+          assert.equal( citizen.ref.hasOwnProperty( 'stdout' ), true, 'citizen.ref does not have expected property "stdout"' );
+          assert.equal( citizen.ref.stdout instanceof require('events'), true, 'new process reference property "stdout" is not an event emitter' );
+          assert.equal( citizen.ref.hasOwnProperty( 'stderr' ), true, 'new process reference does not have expected property "stderr"' );
+          assert.equal( citizen.ref.stderr instanceof require('events'), true, 'new process reference property "stderr" is not an event emitter' );
+          setTimeout( done, 0 );
+        } );
       });
 
       it('will restart a previously-started citizen', function( done ){
-        this.timeout( 10000 );
+        var citizen_name = 'logger';
 
-        var citizen_name = 'one-time-logger',
-            citizen = supervisor.register( citizen_name, './test/citizen/one-time-logger' ),
-            first_start_ref,
-            second_start_ref,
-            started = 0;
-
-        supervisor.noticeboard.watch( citizen_name + '-started', 'do-assertions', function( msg ){
-          started += 1;
-
-          switch( started ){
-            case 1:
-              first_start_ref = citizen.ref;
-
-              supervisor.noticeboard.once( citizen_name + '-shutdown', 'restart-citizen', function(){
-                supervisor.start( citizen_name );
-              });
-            break;
-
-            case 2:
-              supervisor.noticeboard.ignore( citizen_name + '-started', 'do-assertions' );
-
-              second_start_ref = citizen.ref;
-
-              assert.equal( first_start_ref !== second_start_ref, true, 'first and second start refer to the same process instance' );
-              done();
-
-              // cleanup
-                citizen.ref.kill();
-            break;
-
-            default:
-              throw new Error( 'citizen "' + citizen_name + '" started more times than expected' );
-            break;
-          }
-        });
-
-        supervisor.start( citizen_name );
+        new_process
+        .then( () => supervisor.stop( citizen_name ) )
+        .then( () => supervisor.start( citizen_name ) )
+        .then( () => setTimeout( done, 0 ) )
+        .catch( () => {
+          assert.equal( false === true, true, 'first and second start refer to the same process instance' );
+          setTimeout( done, 0 );
+        } );
       });
 
       it('will not restart a currently-running citizen', function( done ){
-        var new_citizen_started = false,
-            test_completed = false;
 
-        supervisor.noticeboard.watch( 'logger-started', 'fail-test', function(){
-          new_citizen_started = true;
-          complete_test();
+        new_process
+        .then(() => {
+          supervisor.start( 'logger' )
+          .then( () => {
+            assert.equal( false === true, true, 'restarted currently-running process' );
+            setTimeout( done, 0 );
+          } )
+          .catch( () => {
+            setTimeout( done, 0 );
+          } );
         });
-
-        setTimeout( complete_test, 888 );
-
-        supervisor.start( 'logger' );
-
-        function complete_test(){
-          if( test_completed ) return;
-
-          test_completed = true;
-
-          assert.equal( new_citizen_started, false, 'restarted currently-running process' );
-          done();
-        }
       });
     });
 
     describe('Supervisor.get', function(){
       var supervisor = supe();
 
-      it('returns citizen with given name if it exists', function(){
-        var citizen = supervisor.start( 'logger', './test/citizen/interval-logger' ),
-            get_val = supervisor.get( 'logger' );
+      it('returns citizen with given name if it exists', function( done ){
+        supervisor.start( 'logger', './test/citizen/interval-logger' )
+        .then( (citizen) => {
+          var get_val = supervisor.get( 'logger' );
+          assert.equal( citizen === get_val, true, 'get return value does not match created citizen' );
 
-        assert.equal( citizen === get_val, true, 'get return value does not match created citizen' );
+          // cleanup
+            supervisor.stop( 'logger' );
 
-        // cleanup
-          citizen.ref.kill();
+          done();
+        } );
       });
 
       it('returns false if citizen with given name does not exist', function(){
@@ -569,25 +561,27 @@ describe('Supe Test Suite', function(){
     it( 'has its own "get_name" function', function( done ){
       this.timeout( 5000 );
 
-      var key = 'get_name',
-          expected_typeof = 'function';
+      key_analyzer.then( (analyzer) => {
+        var key = 'get_name',
+            expected_typeof = 'function';
 
-      supervisor.noticeboard.watch( 'supervisor-message', 'process-analysis', function( msg ){
-        var envelope = msg.notice,
-            message = envelope.msg;
+        supervisor.noticeboard.watch( 'supervisor-message', 'process-analysis', function( msg ){
+          var envelope = msg.notice,
+              message = envelope.msg;
 
-        if( ! message.type || message.type !== 'key-analysis' ) return;
+          if( ! message.type || message.type !== 'key-analysis' ) return;
 
-        var analysis = message;
-        if( analysis.key != key ) return;
-        if( analysis.success != true ) throw new Error( 'citizen analysis of supe key "' + analysis.key + '" failed' );
+          var analysis = message;
+          if( analysis.key != key ) return;
+          if( analysis.success != true ) throw new Error( 'citizen analysis of supe key "' + analysis.key + '" failed' );
 
-        assert.equal( analysis.exists, true, '"' + key + '" does not exist on citizen supe instance' );
-        assert.equal( analysis.typeof, expected_typeof, '"' + key + '" is not a ' + expected_typeof );
-        done();
-      });
+          assert.equal( analysis.exists, true, '"' + key + '" does not exist on citizen supe instance' );
+          assert.equal( analysis.typeof, expected_typeof, '"' + key + '" is not a ' + expected_typeof );
+          done();
+        });
 
-      key_analyzer.mail.send( key );
+        analyzer.mail.send( key );
+      } );
     });
   });
 
@@ -665,24 +659,23 @@ describe('Supe Test Suite', function(){
     });
 
     it('will requeue unacked mail if a citizen crashes', function( done ){
-
       this.timeout( 10000 );
 
       var name = 'unacker',
-          message = 'CRASH',
-          citizen;
+          message = 'CRASH';
 
-      supervisor.noticeboard.once( name + '-crashed', 'do-assertions', function( msg ){
+      supervisor.start( name, './test/citizen/unacked-mail', { retries: 0 })
+      .then( (citizen) => {
+        supervisor.noticeboard.once( name + '-crashed', 'do-assertions', function( msg ){
 
-        assert.equal( citizen.state.current_mail === null, true, 'citizen should not have current mail in its state' );
-        assert.equal( citizen.mail.inbox.length === 1, true, 'inbox does not contain expected amount of mail' );
-        assert.equal( citizen.mail.inbox[0].msg === message, true, 'content of message on queue does not match sent message' );
-        done();
-      });
+          assert.equal( citizen.state.current_mail === null, true, 'citizen should not have current mail in its state' );
+          assert.equal( citizen.mail.inbox.length === 1, true, 'inbox does not contain expected amount of mail' );
+          assert.equal( citizen.mail.inbox[0].msg === message, true, 'content of message on queue does not match sent message' );
+          done();
+        });
 
-      citizen = supervisor.start( name, './test/citizen/unacked-mail', { retries: 0 });
-
-      citizen.mail.send( message );
+        citizen.mail.send( message );
+      } );
     });
 
     it('will requeue unacked mail if a citizen shuts down', function( done ){
@@ -690,20 +683,20 @@ describe('Supe Test Suite', function(){
       this.timeout( 10000 );
 
       var name = 'unacker',
-          message = 'SHUTDOWN',
-          citizen;
+          message = 'SHUTDOWN';
 
-      supervisor.noticeboard.once( name + '-shutdown', 'do-assertions', function( msg ){
+      supervisor.start( name, './test/citizen/unacked-mail', { retries: 0 })
+      .then( (citizen) => {
+        supervisor.noticeboard.once( name + '-shutdown', 'do-assertions', function( msg ){
 
-        assert.equal( citizen.state.current_mail === null, true, 'citizen should not have current mail in its state' );
-        assert.equal( citizen.mail.inbox.length === 1, true, 'inbox does not contain expected amount of mail' );
-        assert.equal( citizen.mail.inbox[0].msg === message, true, 'content of message on queue does not match sent message' );
-        done();
+          assert.equal( citizen.state.current_mail === null, true, 'citizen should not have current mail in its state' );
+          assert.equal( citizen.mail.inbox.length === 1, true, 'inbox does not contain expected amount of mail' );
+          assert.equal( citizen.mail.inbox[0].msg === message, true, 'content of message on queue does not match sent message' );
+          done();
+        });
+
+        citizen.mail.send( message );
       });
-
-      citizen = supervisor.start( name, './test/citizen/unacked-mail', { retries: 0 });
-
-      citizen.mail.send( message );
     });
 
     it('will cache citizen notices', function( done ){
@@ -734,7 +727,6 @@ describe('Supe Test Suite', function(){
       this.timeout( 10000 );
 
       var name = 'pauser',
-          citizen,
           paused_at,
           pause_duration_ms;
 
@@ -762,14 +754,15 @@ describe('Supe Test Suite', function(){
           done();
 
           // cleanup
-            citizen.ref.kill();
+          supervisor.stop( name );
         }
       });
 
-      citizen = supervisor.start( name, './test/citizen/paused-mail', { retries: 0 });
-
-      citizen.mail.send( 'PAUSE' );
-      citizen.mail.send( 'do assertions' );
+      supervisor.start( name, './test/citizen/paused-mail', { retries: 0 })
+      .then( (citizen) => {
+        citizen.mail.send( 'PAUSE' );
+        citizen.mail.send( 'do assertions' );
+      });
     });
   });
 
