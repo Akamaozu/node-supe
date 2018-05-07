@@ -243,6 +243,15 @@ describe('Supe Test Suite', function(){
         } )
         .catch( () => setTimeout( done, 0 ) );
       });
+
+      it('will fail to deregister a unregistered citizen', function( done ){
+        supervisor.deregister( 'unregistered-citizen' )
+        .then( () => {
+          assert.equal( false, true, 'deregistered a unregistered citizen' );
+          setTimeout( done, 0 ) ;
+        } )
+        .catch( () => setTimeout( done, 0 ) );
+      });
     });
 
     describe('Supervisor.start', function(){
@@ -296,7 +305,6 @@ describe('Supe Test Suite', function(){
       });
 
       it('will not restart a currently-running citizen', function( done ){
-
         new_process
         .then(() => {
           supervisor.start( 'logger' )
@@ -308,6 +316,18 @@ describe('Supe Test Suite', function(){
             setTimeout( done, 0 );
           } );
         });
+      });
+
+      it('will fail if file does not match registration', function( done ){
+        supervisor.register( 'custom-logger', './test/citizen/one-time-logger' )
+        .then( () => {
+          supervisor.start( 'custom-logger', 'bad-path' )
+          .then( () => {
+            assert.equal( false === true, true, 'started with a bad file path' );
+            setTimeout( done, 0 );
+          } )
+          .catch( () => setTimeout( done, 0 ) );
+        } );
       });
     });
 
@@ -337,6 +357,38 @@ describe('Supe Test Suite', function(){
             setTimeout( done, 0 );
           } )
           .catch( () => setTimeout( done, 0 ) );
+        });
+      });
+
+      it('fails to stop a unregistered citizen', function( done ){
+        supervisor.stop( 'unregistered-citizen' )
+        .then( ( ) => {
+          assert.equal( true, false, 'was able to stop a unregistered citizen' );
+          setTimeout( done, 0 );
+        } )
+        .catch( () => {
+          assert.equal( true, true );
+          setTimeout( done, 0 );
+        } );
+      });
+
+      it('not fail to stop a already stopped citizen', function( done ){
+        new_process.then( ( citizen ) => {
+          supervisor.stop( 'logger' )
+          .then( () => {
+            supervisor.stop( 'logger' )
+            .then( ( ) => {
+              assert.equal( true, true, 'was able to stop a citizen' );
+              setTimeout( done, 0 );
+            })
+            .catch( () => {
+              assert.equal( true, false, 'was not able to stop a already stopped citizen' );
+              setTimeout( done, 0 );
+            });
+          } )
+          .catch( () => {
+            assert.equal( true, false, 'was not able to stop a citizen' );
+          } );
         });
       });
     });
