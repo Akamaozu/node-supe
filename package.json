@@ -24,6 +24,7 @@
     "url": "git+https://github.com/Akamaozu/node-supe.git"
   },
   "keywords": [
+    "supe",
     "erlang",
     "supervisor",
     "process"
