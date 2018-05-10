@@ -178,6 +178,43 @@ describe('Supe Test Suite', function(){
       });
     });
 
+    describe('Supervisor.deregister', function(){
+      var supervisor = supe(),
+          citizen_name = 'citizen-to-deregister';
+
+      afterEach( function(){
+        if( supervisor.get( citizen_name ) ) supervisor.deregister( citizen_name );
+        supervisor = supe();
+      });
+
+      it('will remove a citizen from supe\'s registry', function(){
+        supervisor.register( citizen_name, './test/citizen/interval-logger' );
+        supervisor.deregister( citizen_name );
+
+        assert.equal( supervisor.get( citizen_name ), false, 'citizen still exists' );
+      });
+
+      it('will stop a running citizen before deregistering it', function(){
+        var stopped = false;
+
+        supervisor.start( citizen_name, './test/citizen/interval-logger' );
+
+        supervisor.noticeboard.once( citizen_name + '-stopped', 'mark-stopped', function(){
+          stopped = true;
+        });
+
+        supervisor.noticeboard.once( citizen_name + '-deregistered', 'do-assertions', function(){
+          var citizen = supervisor.get( citizen_name ),
+              citizen_exists = citizen && citizen != false && citizen != null;
+
+          assert.equal( citizen_exists, false, 'citizen was not deregistered' );
+          assert.equal( stopped, true, 'citizen was not stopped' );
+        });
+
+        supervisor.deregister( citizen_name );
+      });
+    });
+
     describe('Supervisor.start', function(){
       var supervisor,
           new_process; 
