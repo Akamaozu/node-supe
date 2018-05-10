@@ -329,6 +329,35 @@ describe('Supe Test Suite', function(){
 
         supervisor.start( citizen_name  );
       });
+
+      it('throws error if given name is not a string', function(){
+        var non_strings = [ 1, {}, [], null, false, NaN ],
+            errors_thrown = 0;
+
+        non_strings.forEach( function( non_string ){
+          try {
+            supervisor.stop( non_string );
+          }
+          catch(e){
+            errors_thrown += 1;
+          }
+        });
+
+        assert.equal( errors_thrown == non_strings.length, true, 'errors thrown does not match number of non strings tested' );
+      });
+
+      it('throws error if citizen with given name does not exist', function(){
+        var error_thrown = false;
+
+        try{
+          supervisor.stop( 'non-existent-citizen' );
+        }
+        catch(e) {
+          error_thrown = true;
+        }
+
+        assert.equal( error_thrown, true, 'no error thrown when stopping non-existent citizen' );
+      });
     });
 
     describe('Supervisor.get', function(){
