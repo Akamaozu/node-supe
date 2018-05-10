@@ -178,7 +178,7 @@ describe('Supe Test Suite', function(){
       });
     });
 
-    describe('Supervisor.start', function(){      
+    describe('Supervisor.start', function(){
       var supervisor,
           new_process; 
 
@@ -273,6 +273,61 @@ describe('Supe Test Suite', function(){
           assert.equal( new_citizen_started, false, 'restarted currently-running process' );
           done();
         }
+      });
+    });
+
+    describe('Supervisor.stop', function(){
+      var supervisor = supe(),
+          citizen_name, citizen;
+
+      afterEach( function(){
+        if( ! citizen || ! citizen.ref ) return;
+
+        citizen.ref.kill();
+        citizen_name = citizen = null;
+      });
+
+      it('will stop a running citizen', function( done ){
+        this.timeout( 20000 );
+
+        citizen_name = 'nodejs-app-no-supe';
+        citizen = supervisor.start( citizen_name, './test/citizen/notice-once-receiver' );
+
+        var stopped = false;
+
+        supervisor.noticeboard.once( citizen_name + '-stopped', 'do-assertions', function( msg ){
+          stopped = true;
+          do_assertions();
+        });
+
+        supervisor.stop( citizen_name );
+
+        function do_assertions(){
+          done();
+          assert.equal( stopped, true, '"' + citizen_name + '" was not stopped' );
+        }
+      });
+
+      it('will eventually stop a citizen that refuses to shutdown', function( done ){
+        this.timeout( 10000 );
+
+        var citizen_stopped = false;
+
+        citizen_name = 'shutdown-ignorer';
+        citizen = supervisor.register( citizen_name, './test/citizen/shutdown-ignorer' );
+
+        supervisor.noticeboard.once( citizen_name + '-started', 'stop-it', function(){
+          supervisor.stop( citizen_name );
+        });
+
+        supervisor.noticeboard.once( citizen_name + '-stopped', 'do-assertions', function(){
+          citizen_stopped = true;
+
+          assert.equal( citizen_stopped, true, 'citizen was not stopped' );
+          done();
+        });
+
+        supervisor.start( citizen_name  );
       });
     });
 
