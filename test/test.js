@@ -14,39 +14,44 @@ describe('Supe Test Suite', function(){
   describe('Supervisor (Instantiated Supe) Properties', function(){
 
     var supervisor = supe(),
-        expected_properties = [ 'is_registered', 'register', 'start', 'get', 'use', 'noticeboard', 'hook' ];
+        expected_properties = [
+          { key: 'is_registered', type: 'function' },
+          { key: 'deregister', type: 'function' },
+          { key: 'register', type: 'function' },
+          { key: 'start', type: 'function' },
+          { key: 'stop', type: 'function' },
+          { key: 'get', type: 'function' },
+          { key: 'use', type: 'function' },
+          { key: 'noticeboard', type: 'object' },
+          { key: 'hook', type: 'object' }
+        ],
+        expected_properties_index = [];
 
-    it('has its own "is_registered" function', function(){
-      assert.equal( supervisor.hasOwnProperty('is_registered') && typeof supervisor.is_registered === 'function', true, 'didn\'t instantiate with its own "is_registered" function');
-    });
+    expected_properties.forEach( function( prop ){
+      it( 'has its own "' + prop.key + '" ' + prop.type, function(){
+        assert.equal( supervisor.hasOwnProperty( prop.key ), true, 'has no "' + prop.key + '" property' );
 
-    it('has its own "register" function', function(){
-      assert.equal( supervisor.hasOwnProperty('register') && typeof supervisor.register === 'function', true, 'didn\'t instantiate with its own "register" function');
-    });
+        switch( prop.type ){
+          case 'function':
+            assert.equal( typeof supervisor[ prop.key ], 'function', '"' + prop.key + '" is not a function' );
+          break;
 
-    it('has its own "start" function', function(){
-      assert.equal( supervisor.hasOwnProperty('start') && typeof supervisor.start === 'function', true, 'didn\'t instantiate with its own "start" function');
-    });
+          case 'object':
+            assert.equal( Object.prototype.toString.call( supervisor[ prop.key ] ), '[object Object]', '"' + prop.key + '" is not a function' );
+          break;
 
-    it('has its own "get" function', function(){
-      assert.equal( supervisor.hasOwnProperty('get') && typeof supervisor.get === 'function', true, 'didn\'t instantiate with its own "get" function');
-    });
+          default:
+            throw new Error( 'no tests defined for '+ prop.type +' data-type' );
+          break;
+        }
 
-    it('has its own "use" function', function(){
-      assert.equal( supervisor.hasOwnProperty('use') && typeof supervisor.use === 'function', true, 'didn\'t instantiate with its own "get" function');
-    });
-
-    it('has its own "noticeboard" object', function(){
-      assert.equal( supervisor.hasOwnProperty('noticeboard') && Object.prototype.toString.call( supervisor.noticeboard ) === '[object Object]', true, 'didn\'t instantiate with its own "noticeboard" object');
-    });
-
-    it('has its own "hook" object', function(){
-      assert.equal( supervisor.hasOwnProperty('hook') && Object.prototype.toString.call( supervisor.hook ) === '[object Object]', true, 'didn\'t instantiate with its own "noticeboard" object');
+        expected_properties_index.push( prop.key );
+      });
     });
 
     it('has no unexpected properties', function(){
       for( var prop in supervisor ){
-        assert.equal( expected_properties.indexOf( prop ) > -1, true, 'has unexpected property "' + prop + '"' );
+        assert.equal( expected_properties_index.indexOf( prop ) > -1, true, 'has unexpected property "' + prop + '"' );
       }
     });
 
@@ -173,7 +178,44 @@ describe('Supe Test Suite', function(){
       });
     });
 
-    describe('Supervisor.start', function(){      
+    describe('Supervisor.deregister', function(){
+      var supervisor = supe(),
+          citizen_name = 'citizen-to-deregister';
+
+      afterEach( function(){
+        if( supervisor.get( citizen_name ) ) supervisor.deregister( citizen_name );
+        supervisor = supe();
+      });
+
+      it('will remove a citizen from supe\'s registry', function(){
+        supervisor.register( citizen_name, './test/citizen/interval-logger' );
+        supervisor.deregister( citizen_name );
+
+        assert.equal( supervisor.get( citizen_name ), false, 'citizen still exists' );
+      });
+
+      it('will stop a running citizen before deregistering it', function(){
+        var stopped = false;
+
+        supervisor.start( citizen_name, './test/citizen/interval-logger' );
+
+        supervisor.noticeboard.once( citizen_name + '-stopped', 'mark-stopped', function(){
+          stopped = true;
+        });
+
+        supervisor.noticeboard.once( citizen_name + '-deregistered', 'do-assertions', function(){
+          var citizen = supervisor.get( citizen_name ),
+              citizen_exists = citizen && citizen != false && citizen != null;
+
+          assert.equal( citizen_exists, false, 'citizen was not deregistered' );
+          assert.equal( stopped, true, 'citizen was not stopped' );
+        });
+
+        supervisor.deregister( citizen_name );
+      });
+    });
+
+    describe('Supervisor.start', function(){
       var supervisor,
           new_process; 
 
@@ -252,7 +294,13 @@ describe('Supe Test Suite', function(){
 
         setTimeout( complete_test, 888 );
 
-        supervisor.start( 'logger' );
+        try {
+          supervisor.start( 'logger' );
+        }
+
+        catch(e){
+          complete_test();
+        }
 
         function complete_test(){
           if( test_completed ) return;
@@ -262,6 +310,90 @@ describe('Supe Test Suite', function(){
           assert.equal( new_citizen_started, false, 'restarted currently-running process' );
           done();
         }
+      });
+    });
+
+    describe('Supervisor.stop', function(){
+      var supervisor = supe(),
+          citizen_name, citizen;
+
+      afterEach( function(){
+        if( ! citizen || ! citizen.ref ) return;
+
+        citizen.ref.kill();
+        citizen_name = citizen = null;
+      });
+
+      it('will stop a running citizen', function( done ){
+        this.timeout( 20000 );
+
+        citizen_name = 'nodejs-app-no-supe';
+        citizen = supervisor.start( citizen_name, './test/citizen/notice-once-receiver' );
+
+        var stopped = false;
+
+        supervisor.noticeboard.once( citizen_name + '-stopped', 'do-assertions', function( msg ){
+          stopped = true;
+          do_assertions();
+        });
+
+        supervisor.stop( citizen_name );
+
+        function do_assertions(){
+          done();
+          assert.equal( stopped, true, '"' + citizen_name + '" was not stopped' );
+        }
+      });
+
+      it('will eventually stop a citizen that refuses to shutdown', function( done ){
+        this.timeout( 10000 );
+
+        var citizen_stopped = false;
+
+        citizen_name = 'shutdown-ignorer';
+        citizen = supervisor.register( citizen_name, './test/citizen/shutdown-ignorer' );
+
+        supervisor.noticeboard.once( citizen_name + '-started', 'stop-it', function(){
+          supervisor.stop( citizen_name );
+        });
+
+        supervisor.noticeboard.once( citizen_name + '-stopped', 'do-assertions', function(){
+          citizen_stopped = true;
+
+          assert.equal( citizen_stopped, true, 'citizen was not stopped' );
+          done();
+        });
+
+        supervisor.start( citizen_name  );
+      });
+
+      it('throws error if given name is not a string', function(){
+        var non_strings = [ 1, {}, [], null, false, NaN ],
+            errors_thrown = 0;
+
+        non_strings.forEach( function( non_string ){
+          try {
+            supervisor.stop( non_string );
+          }
+          catch(e){
+            errors_thrown += 1;
+          }
+        });
+
+        assert.equal( errors_thrown == non_strings.length, true, 'errors thrown does not match number of non strings tested' );
+      });
+
+      it('throws error if citizen with given name does not exist', function(){
+        var error_thrown = false;
+
+        try{
+          supervisor.stop( 'non-existent-citizen' );
+        }
+        catch(e) {
+          error_thrown = true;
+        }
+
+        assert.equal( error_thrown, true, 'no error thrown when stopping non-existent citizen' );
       });
     });
 
