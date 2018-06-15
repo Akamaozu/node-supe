@@ -11,12 +11,12 @@
     "require-directory": "2.1.1"
   },
   "devDependencies": {
-    "coveralls": "^2.11.15",
-    "mocha": "^3.2.0",
-    "nyc": "^10.0.0"
+    "coveralls": "^3.0.1",
+    "mocha": "^5.2.0",
+    "nyc": "^13.0.0"
   },
   "scripts": {
-    "test": "nyc node_modules/mocha/bin/_mocha",
+    "test": "nyc mocha --exit",
     "lcov-to-coveralls": "nyc report --reporter=text-lcov | coveralls"
   },
   "repository": {
