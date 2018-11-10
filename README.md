@@ -5,7 +5,7 @@
 
 Node.js makes it easy (and quick) to write a useful program.**Supe is a two-pronged approach to writing safer Node.js programs**.
 
-1. Makex it easy to put parts of your program into private Node.js instances.
+1. Makes it easy to put parts of your program into private Node.js instances.
 2. Provide tools that make working with multiple Node.js instances a breeze.
 
 ![Multiple Node.js instances working together](http://public.designbymobi.us/img/node-satellite-error.jpg)
