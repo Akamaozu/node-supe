@@ -3,13 +3,10 @@
 
 [![npm version](https://badge.fury.io/js/supe.svg)](https://badge.fury.io/js/supe) [![travis ci](https://travis-ci.org/Akamaozu/node-supe.svg?branch=master)](https://travis-ci.org/Akamaozu/node-supe) [![Coverage Status](https://coveralls.io/repos/github/Akamaozu/node-supe/badge.svg?branch=master)](https://coveralls.io/github/Akamaozu/node-supe?branch=master)
 
-Node.js makes it easy (and quick) to write a useful program.**Supe is a two-pronged approach to writing safer Node.js programs**.
+Node.js makes it easy (and quick) to write a useful program. **Supe is a two-pronged approach to writing safer Node.js programs**.
 
 1. Makes it easy to put parts of your program into private Node.js instances.
 2. Provide tools that make working with multiple Node.js instances a breeze.
-
-![Multiple Node.js instances working together](http://public.designbymobi.us/img/node-satellite-error.jpg)
-Output from [TorontoJS Workshop Satellite](https://github.com/Akamaozu/workshop-satellite).
 
 # Install
 ```js
