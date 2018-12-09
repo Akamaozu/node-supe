@@ -696,9 +696,8 @@ describe('Supe Test Suite', function(){
       var key = 'get_name',
           expected_typeof = 'function';
 
-      supervisor.noticeboard.watch( 'supervisor-message', 'process-analysis', function( msg ){
-        var envelope = msg.notice,
-            message = envelope.msg;
+      supervisor.hook.add( 'supervisor-mail', 'process-analysis', function( envelope ){
+        var message = envelope.msg;
 
         if( ! message.type || message.type !== 'key-analysis' ) return;
 
@@ -773,10 +772,7 @@ describe('Supe Test Suite', function(){
 
       this.timeout( 10000 );
 
-      supervisor.noticeboard.watch( 'supervisor-message', 'do-assertions', function( msg ){
-
-        var envelope = msg.notice;
-
+      supervisor.hook.add( 'supervisor-mail', 'do-assertions', function( envelope ){
         if( envelope.type !== 'mail' ) return;
         if( envelope.from !== 'routed-mail-receiver' ) return;
         if( envelope.msg.received_mail_from !== 'routed-mail-sender' ) return;
@@ -862,23 +858,17 @@ describe('Supe Test Suite', function(){
           paused_at,
           pause_duration_ms;
 
-      supervisor.noticeboard.watch( 'supervisor-message', 'handle-mail', function( msg ){
+      supervisor.hook.add( 'supervisor-mail', 'handle-mail', function( envelope ){
+        if( ! envelope.msg ) return;
 
-        var envelope = msg.notice,
-            content;
-
-        if( !envelope.msg ) return;
-
-        content = envelope.msg;
+        var content = envelope.msg;
 
         if( content.pause_for ){
-
           paused_at = content.paused_at;
           pause_duration_ms = content.pause_for;
         }
 
         if( content.received === 'do assertions' ){
-
           var received_at = Date.now(),
               processed = received_at - paused_at;
 
@@ -920,10 +910,10 @@ describe('Supe Test Suite', function(){
         supervisor.noticeboard.ignore( 'ready-to-receive-notices', 'send-sample-notice' );
       });
 
-      supervisor.noticeboard.watch( 'supervisor-message', 'do-assertions', function( msg ){
-        if( msg.notice.type !== 'mail' ) return;
+      supervisor.hook.add( 'supervisor-mail', 'do-assertions', function( envelope ){
+        if( envelope.type !== 'mail' ) return;
 
-        var content = msg.notice.msg;
+        var content = envelope.msg;
         if( !content.received || !content.notice ) return;
 
         assert.equal( content.notice, sample_notice, 'received notice is not what was sent' );
@@ -958,10 +948,10 @@ describe('Supe Test Suite', function(){
         supervisor.noticeboard.ignore( 'ready-to-receive-notices', 'send-sample-notices' );
       });
 
-      supervisor.noticeboard.watch( 'supervisor-message', 'do-assertions', function( msg ){
-        if( msg.notice.type !== 'mail' ) return;
+      supervisor.hook.add( 'supervisor-mail', 'do-assertions', function( envelope ){
+        if( envelope.type !== 'mail' ) return;
 
-        var content = msg.notice.msg;
+        var content = envelope.msg;
         if( !content.received || !content.notice ) return;
 
         citizen_responses += 1;
@@ -1019,17 +1009,14 @@ describe('Supe Test Suite', function(){
       var payload_to_cache = { success: true };
 
       // handle citizen's response to cache test
-        supervisor.noticeboard.watch( 'supervisor-message', 'assess-cache-access', access_cache_access );
+        supervisor.hook.add( 'supervisor-mail', 'assess-cache-access', access_cache_access );
 
       // cache payload
         supervisor.noticeboard.notify( 'sample-notice', payload_to_cache );
 
       supervisor.start( 'cache-accesser', './test/citizen/cache-accesser' );
 
-      function access_cache_access( msg ){
-
-        var envelope = msg.notice;
-
+      function access_cache_access( envelope ){
         if( envelope.type !== 'mail' ) return;
         if( envelope.from !== 'cache-accesser' ) return;
 
