@@ -483,43 +483,6 @@ describe('Supe Test Suite', function(){
       supervisor = supe({ retries: 0 });
     });
 
-    it('sends notice "(name)-registered" when citizen is registered', function( done ){
-      var registered = false;
-
-      supervisor.noticeboard.once( 'one-time-crasher-registered', 'do-assertions', function( msg ){
-        registered = true;
-
-        assert.equal( registered, true, 'did not detect specific citizen registration' );
-        done();
-      });
-
-      supervisor.register( 'one-time-crasher', './test/citizen/one-time-crasher', { retries: 0 } );
-    });
-
-    it('sends notice "citizen-registered" when any citizen is registered', function( done ){
-      this.timeout( 10000 );
-      
-      var first_citizen_name = 'first-crasher',
-          second_citizen_name = 'second-crasher',
-          registrations_detected = 0;
-
-      supervisor.noticeboard.watch( 'citizen-registered', 'do-assertions', function( msg ){
-        registrations_detected += 1;
-
-        var details = msg.notice;
-
-        if( details.name !== second_citizen_name ) return;
-        
-        assert.equal( registrations_detected === 2, true, 'did not detect all citizen registrations' );
-        assert.equal( details.name === second_citizen_name, true, 'did not detect expected citizen registration' );
-        
-        done();
-      });
-
-      supervisor.register( first_citizen_name, './test/citizen/one-time-crasher' );
-      supervisor.register( second_citizen_name, './test/citizen/one-time-crasher' );
-    });
-
     it('sends notice "(name)-started" when citizen is started', function( done ){
       this.timeout( 10000 );
 
