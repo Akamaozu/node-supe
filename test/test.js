@@ -250,20 +250,21 @@ describe('Supe Test Suite', function(){
             second_start_ref,
             started = 0;
 
-        supervisor.noticeboard.watch( citizen_name + '-started', 'do-assertions', function( msg ){
+        supervisor.hook.add( citizen_name + '-started', 'do-assertions', function(){
           started += 1;
 
           switch( started ){
             case 1:
               first_start_ref = citizen.ref;
 
-              supervisor.noticeboard.once( citizen_name + '-shutdown', 'restart-citizen', function(){
+              supervisor.hook.add( citizen_name + '-shutdown', 'restart-citizen', function(){
+                supervisor.hook.del( citizen_name + '-shutdown', 'restart-citizen' );
                 supervisor.start( citizen_name );
               });              
             break;
 
             case 2:
-              supervisor.noticeboard.ignore( citizen_name + '-started', 'do-assertions' );
+              supervisor.hook.del( citizen_name + '-started', 'do-assertions' );
 
               second_start_ref = citizen.ref;
 
@@ -287,7 +288,7 @@ describe('Supe Test Suite', function(){
         var new_citizen_started = false,
             test_completed = false;
 
-        supervisor.noticeboard.watch( 'logger-started', 'fail-test', function(){
+        supervisor.hook.add( 'logger-started', 'fail-test', function(){
           new_citizen_started = true;
           complete_test();
         });
@@ -753,11 +754,13 @@ describe('Supe Test Suite', function(){
           message = 'CRASH',
           citizen; 
 
-      supervisor.noticeboard.once( name + '-crashed', 'do-assertions', function( msg ){
+      supervisor.hook.add( name + '-crashed', 'do-assertions', function(){
+        supervisor.hook.del( name + '-crashed', 'do-assertions' );
 
         assert.equal( citizen.state.current_mail === null, true, 'citizen should not have current mail in its state' );
         assert.equal( citizen.mail.inbox.length === 1, true, 'inbox does not contain expected amount of mail' );
         assert.equal( citizen.mail.inbox[0].msg === message, true, 'content of message on queue does not match sent message' );
+
         done();
       });
 
@@ -774,11 +777,13 @@ describe('Supe Test Suite', function(){
           message = 'SHUTDOWN',
           citizen; 
 
-      supervisor.noticeboard.once( name + '-shutdown', 'do-assertions', function( msg ){
+      supervisor.hook.add( name + '-shutdown', 'do-assertions', function( msg ){
+        supervisor.hook.del( name + '-shutdown', 'do-assertions' );
 
         assert.equal( citizen.state.current_mail === null, true, 'citizen should not have current mail in its state' );
         assert.equal( citizen.mail.inbox.length === 1, true, 'inbox does not contain expected amount of mail' );
         assert.equal( citizen.mail.inbox[0].msg === message, true, 'content of message on queue does not match sent message' );
+
         done();
       });
 
@@ -938,7 +943,8 @@ describe('Supe Test Suite', function(){
 
       supervisor.noticeboard.notify( sample_notice, 42 );
 
-      supervisor.noticeboard.once( 'double-piper-crashed', 'fail-test', function(){
+      supervisor.hook.add( 'double-piper-crashed', 'fail-test', function(){
+        supervisor.hook.del( 'double-piper-crashed', 'fail-test' );
         failed = true;
       });
 
