@@ -199,11 +199,11 @@ describe('Supe Test Suite', function(){
 
         supervisor.start( citizen_name, './test/citizen/interval-logger' );
 
-        supervisor.noticeboard.once( citizen_name + '-stopped', 'mark-stopped', function(){
+        supervisor.hook.add( citizen_name + '-stopped', 'mark-stopped', function(){
           stopped = true;
         });
 
-        supervisor.noticeboard.once( citizen_name + '-deregistered', 'do-assertions', function(){
+        supervisor.hook.add( citizen_name + '-deregistered', 'do-assertions', function(){
           var citizen = supervisor.get( citizen_name ),
               citizen_exists = citizen && citizen != false && citizen != null;
 
@@ -332,7 +332,7 @@ describe('Supe Test Suite', function(){
 
         var stopped = false;
 
-        supervisor.noticeboard.once( citizen_name + '-stopped', 'do-assertions', function( msg ){
+        supervisor.hook.add( citizen_name + '-stopped', 'do-assertions', function( msg ){
           stopped = true;
           do_assertions();
         });
@@ -353,11 +353,11 @@ describe('Supe Test Suite', function(){
         citizen_name = 'shutdown-ignorer';
         citizen = supervisor.register( citizen_name, './test/citizen/shutdown-ignorer' );
 
-        supervisor.noticeboard.once( citizen_name + '-started', 'stop-it', function(){
+        supervisor.hook.add( citizen_name + '-started', 'stop-it', function(){
           supervisor.stop( citizen_name );
         });
 
-        supervisor.noticeboard.once( citizen_name + '-stopped', 'do-assertions', function(){
+        supervisor.hook.add( citizen_name + '-stopped', 'do-assertions', function(){
           citizen_stopped = true;
 
           assert.equal( citizen_stopped, true, 'citizen was not stopped' );
