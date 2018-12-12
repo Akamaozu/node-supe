@@ -640,45 +640,6 @@ describe('Supe Test Suite', function(){
       supervisor.start( first_citizen_name, './test/citizen/one-time-crasher' );
       supervisor.start( second_citizen_name, './test/citizen/one-time-crasher' );
     });
-
-    it('sends notice "(name)-auto-restarted" when crashed citizen is restarted', function( done ){
-
-      this.timeout( 10000 );
-
-      var name = 'one-time-crasher',
-          detected_crash = false;
-
-      supervisor.noticeboard.once( name + '-auto-restarted', 'do-assertions', function( msg ){
-
-        detected_crash = true;
-        assert.equal( detected_crash, true, 'did not detect specific citizen auto-restart' );
-        done();
-      });
-
-      supervisor.start( name, './test/citizen/one-time-crasher', { retries: 1 } );
-    });
-
-    it('sends notice "citizen-auto-restarted" when any crashed citizen is restarted', function( done ){
-
-      this.timeout( 5000 );
-      
-      var first_citizen_name = 'first-crasher',
-          second_citizen_name = 'second-crasher',
-          restarts_detected = 0;
-
-      supervisor.noticeboard.watch( 'citizen-auto-restarted', 'do-assertions', function( msg ){
-
-        restarts_detected += 1;
-
-        if( restarts_detected < 2 ) return;
-
-        assert.equal( restarts_detected === 2, true, 'did not detect all citizen restarts' );        
-        done();
-      });
-
-      supervisor.start( first_citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
-      supervisor.start( second_citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
-    });
   });
 
   describe('Citizen Properties', function(){
@@ -730,10 +691,11 @@ describe('Supe Test Suite', function(){
 
       var citizen_name = 'crasher';
 
-      supervisor.noticeboard.once( citizen_name + '-auto-restarted', 'do-assertions', function( msg ){
-
+      supervisor.hook.add( citizen_name + '-auto-restarted', 'do-assertions', function( msg ){
         var details = msg.notice,
             citizen = supervisor.get( citizen_name );
+
+        supervisor.hook.del( citizen_name + '-auto-restarted', 'do-assertions' );
 
         assert.equal( citizen.ref && citizen.ref.stdout && citizen.ref instanceof require('events'), true, 'restarted citizen does not have reference to valid child process' );
         done();
@@ -749,17 +711,16 @@ describe('Supe Test Suite', function(){
           max_restarts = 2,
           restarts = 0;
 
-      supervisor.noticeboard.watch( citizen_name + '-auto-restarted', 'count-auto-restarts', function(){
+      supervisor.hook.add( citizen_name + '-auto-restarted', 'count-auto-restarts', function(){
         restarts += 1;
 
         if( restarts > max_restarts ) done( new Error( 'restarted citizen more than permitted amount of times' ) );
       });
 
-      supervisor.noticeboard.watch( citizen_name + '-excessive-crash', 'do-assertions', function(){
+      supervisor.hook.add( citizen_name + '-excessive-crash', 'do-assertions', function(){
 
         // wait a second before doing assertions, just in case
           setTimeout( function(){
-
             assert.equal( restarts === max_restarts, true, 'current restarts does not match max allowed restarts' );
             done();
           }, 1000 );
