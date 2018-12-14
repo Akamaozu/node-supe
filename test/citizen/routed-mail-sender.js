@@ -1,3 +1,3 @@
-var supe = require('../../index');
+var citizen = require('../../index');
 
-supe.mail.send({ to: 'routed-mail-receiver' }, 'hello receiver' );
+citizen.mail.send({ to: 'routed-mail-receiver' }, 'hello receiver' );
