@@ -1,29 +1,25 @@
-var supe = require('../../index');
+var citizen = require('../../index');
 
-supe.mail.receive( function( envelope, ack ){
+citizen.hook.add( 'citizen-mail', 'handle-pause-requests', function( envelope, ack ){
+  if( ! envelope.msg || typeof envelope.msg !== 'string' ) return;
+  if( envelope.msg.toUpperCase() !== 'PAUSE' ) return;
 
-  switch( envelope.msg ){
+  var pause_duration_ms = 1000;
 
-    case 'pause':
-    case 'PAUSE':
+  citizen.mail.pause();
+  citizen.mail.send({ pause_for: pause_duration_ms, paused_at: Date.now() });
 
-      var pause_duration_ms = 1000;
-
-      supe.mail.pause();
-
-      supe.mail.send({ pause_for: pause_duration_ms, paused_at: Date.now() });
-
-      setTimeout( supe.mail.receive, pause_duration_ms );
-    break;
-
-    default:
-
-      supe.mail.send({ received: envelope.msg });
-    break;
-  }
+  setTimeout( citizen.mail.receive, pause_duration_ms );
 
   ack();
 });
+
+citizen.hook.add( 'citizen-mail', 'handle-nonpause-requests', function( envelope, ack ){
+  citizen.mail.send({ received: envelope.msg });
+  ack();
+});
+
+citizen.mail.receive();
 
 // wait ten secs before shutting down
   setTimeout( process.exit, 10000 );

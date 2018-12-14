@@ -1,8 +1,10 @@
-var supe = require('../../index');
+var citizen = require('../../index');
 
-supe.mail.receive( function( envelope, ack ){
-
+citizen.hook.add( 'citizen-mail', 'reply-all-mail', function( envelope, ack ){
   console.log( envelope );
-  supe.mail.send( 'hello supervisor' );
+  citizen.mail.send( 'hello supervisor' );
+
   ack();
 });
+
+citizen.mail.receive();
