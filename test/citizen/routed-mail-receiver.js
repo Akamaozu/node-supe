@@ -1,10 +1,13 @@
-var supe = require('../../index');
+var citizen = require('../../index');
 
-supe.mail.receive( function( envelope, ack ){
+citizen.hook.add( 'citizen-mail', 'handle-routed-mail', function( envelope, ack ){
+  if( ! envelope.from ) return;
 
-  if( envelope.from ) supe.mail.send({ received_mail_from: envelope.from });
+  citizen.mail.send({ received_mail_from: envelope.from });
   ack();
 });
+
+citizen.mail.receive();
 
 // wait ten secs before shutting down
 setTimeout( process.exit, 10000 );

@@ -1,4 +1,3 @@
-setInterval( function(){
-  
-  console.log( 'interval logging' );
-}, 1000 );
+var citizen = require( '../../index' );
+
+setInterval( console.log, 1000, 'interval logging' );

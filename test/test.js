@@ -194,21 +194,25 @@ describe('Supe Test Suite', function(){
         assert.equal( supervisor.get( citizen_name ), false, 'citizen still exists' );
       });
 
-      it('will stop a running citizen before deregistering it', function(){
+      it('will stop a running citizen before deregistering it', function( done ){
+        this.timeout( 10000 );
+
         var stopped = false;
 
         supervisor.start( citizen_name, './test/citizen/interval-logger' );
 
-        supervisor.noticeboard.once( citizen_name + '-stopped', 'mark-stopped', function(){
+        supervisor.hook.add( citizen_name + '-stopped', 'mark-stopped', function(){
           stopped = true;
         });
 
-        supervisor.noticeboard.once( citizen_name + '-deregistered', 'do-assertions', function(){
+        supervisor.hook.add( citizen_name + '-deregistered', 'do-assertions', function(){
           var citizen = supervisor.get( citizen_name ),
               citizen_exists = citizen && citizen != false && citizen != null;
 
           assert.equal( citizen_exists, false, 'citizen was not deregistered' );
           assert.equal( stopped, true, 'citizen was not stopped' );
+
+          done();
         });
 
         supervisor.deregister( citizen_name );
@@ -221,24 +225,22 @@ describe('Supe Test Suite', function(){
 
       beforeEach( function(){
         supervisor = supe();
-        new_process = supervisor.start( 'logger', './test/citizen/interval-logger' );
       });
 
-      afterEach( function(){
-        new_process.ref.kill();
-        new_process = null;
-      });
+      it('citizen has a process reference ("ref" property) that is a node child_process', function( done ){
+        this.timeout( 10000 );
 
-      it('citizen has a process reference ("ref" property)', function(){
+        var new_process = supervisor.start( 'logger', './test/citizen/interval-logger' );
+
         assert.equal( new_process.hasOwnProperty( 'ref' ), true, 'citizen does not have ref property' );
-      });
+        assert.equal( new_process.ref instanceof require('child_process').ChildProcess, true, 'citizen "ref" property is not a child process' );
 
-      it('citizen\'s process reference ("ref" property) is a node child_process instance', function(){
-        assert.equal( new_process.ref instanceof require('events'), true, 'citizen "ref" property is not an event emitter' );
-        assert.equal( new_process.ref.hasOwnProperty( 'stdout' ), true, 'citizen.ref does not have expected property "stdout"' );
-        assert.equal( new_process.ref.stdout instanceof require('events'), true, 'new process reference property "stdout" is not an event emitter' );
-        assert.equal( new_process.ref.hasOwnProperty( 'stderr' ), true, 'new process reference does not have expected property "stderr"' );
-        assert.equal( new_process.ref.stderr instanceof require('events'), true, 'new process reference property "stderr" is not an event emitter' );
+        // cleanup
+        supervisor.hook.add( 'logger-stopped', 'done', function(){
+          done();
+        });
+
+        supervisor.stop( 'logger' );
       });
 
       it('will restart a previously-started citizen', function( done ){
@@ -250,20 +252,21 @@ describe('Supe Test Suite', function(){
             second_start_ref,
             started = 0;
 
-        supervisor.noticeboard.watch( citizen_name + '-started', 'do-assertions', function( msg ){
+        supervisor.hook.add( citizen_name + '-started', 'do-assertions', function(){
           started += 1;
 
           switch( started ){
             case 1:
               first_start_ref = citizen.ref;
 
-              supervisor.noticeboard.once( citizen_name + '-shutdown', 'restart-citizen', function(){
+              supervisor.hook.add( citizen_name + '-shutdown', 'restart-citizen', function(){
+                supervisor.hook.del( citizen_name + '-shutdown', 'restart-citizen' );
                 supervisor.start( citizen_name );
               });              
             break;
 
             case 2:
-              supervisor.noticeboard.ignore( citizen_name + '-started', 'do-assertions' );
+              supervisor.hook.del( citizen_name + '-started', 'do-assertions' );
 
               second_start_ref = citizen.ref;
 
@@ -287,7 +290,7 @@ describe('Supe Test Suite', function(){
         var new_citizen_started = false,
             test_completed = false;
 
-        supervisor.noticeboard.watch( 'logger-started', 'fail-test', function(){
+        supervisor.hook.add( 'logger-started', 'fail-test', function(){
           new_citizen_started = true;
           complete_test();
         });
@@ -332,7 +335,7 @@ describe('Supe Test Suite', function(){
 
         var stopped = false;
 
-        supervisor.noticeboard.once( citizen_name + '-stopped', 'do-assertions', function( msg ){
+        supervisor.hook.add( citizen_name + '-stopped', 'do-assertions', function( msg ){
           stopped = true;
           do_assertions();
         });
@@ -353,11 +356,11 @@ describe('Supe Test Suite', function(){
         citizen_name = 'shutdown-ignorer';
         citizen = supervisor.register( citizen_name, './test/citizen/shutdown-ignorer' );
 
-        supervisor.noticeboard.once( citizen_name + '-started', 'stop-it', function(){
+        supervisor.hook.add( citizen_name + '-started', 'stop-it', function(){
           supervisor.stop( citizen_name );
         });
 
-        supervisor.noticeboard.once( citizen_name + '-stopped', 'do-assertions', function(){
+        supervisor.hook.add( citizen_name + '-stopped', 'do-assertions', function(){
           citizen_stopped = true;
 
           assert.equal( citizen_stopped, true, 'citizen was not stopped' );
@@ -400,14 +403,18 @@ describe('Supe Test Suite', function(){
     describe('Supervisor.get', function(){
       var supervisor = supe();
 
-      it('returns citizen with given name if it exists', function(){
+      it('returns citizen with given name if it exists', function( done ){
         var citizen = supervisor.start( 'logger', './test/citizen/interval-logger' ),
             get_val = supervisor.get( 'logger' );
 
         assert.equal( citizen === get_val, true, 'get return value does not match created citizen' );
 
         // cleanup
-          citizen.ref.kill();
+          supervisor.hook.add( 'logger-stopped', 'end-test', function(){
+            done();
+          });
+
+          supervisor.stop( 'logger' );
       });
 
       it('returns false if citizen with given name does not exist', function(){
@@ -480,43 +487,6 @@ describe('Supe Test Suite', function(){
     
     beforeEach( function(){
       supervisor = supe({ retries: 0 });
-    });
-
-    it('sends notice "(name)-registered" when citizen is registered', function( done ){
-      var registered = false;
-
-      supervisor.noticeboard.once( 'one-time-crasher-registered', 'do-assertions', function( msg ){
-        registered = true;
-
-        assert.equal( registered, true, 'did not detect specific citizen registration' );
-        done();
-      });
-
-      supervisor.register( 'one-time-crasher', './test/citizen/one-time-crasher', { retries: 0 } );
-    });
-
-    it('sends notice "citizen-registered" when any citizen is registered', function( done ){
-      this.timeout( 10000 );
-      
-      var first_citizen_name = 'first-crasher',
-          second_citizen_name = 'second-crasher',
-          registrations_detected = 0;
-
-      supervisor.noticeboard.watch( 'citizen-registered', 'do-assertions', function( msg ){
-        registrations_detected += 1;
-
-        var details = msg.notice;
-
-        if( details.name !== second_citizen_name ) return;
-        
-        assert.equal( registrations_detected === 2, true, 'did not detect all citizen registrations' );
-        assert.equal( details.name === second_citizen_name, true, 'did not detect expected citizen registration' );
-        
-        done();
-      });
-
-      supervisor.register( first_citizen_name, './test/citizen/one-time-crasher' );
-      supervisor.register( second_citizen_name, './test/citizen/one-time-crasher' );
     });
 
     it('sends notice "(name)-started" when citizen is started', function( done ){
@@ -640,45 +610,6 @@ describe('Supe Test Suite', function(){
       supervisor.start( first_citizen_name, './test/citizen/one-time-crasher' );
       supervisor.start( second_citizen_name, './test/citizen/one-time-crasher' );
     });
-
-    it('sends notice "(name)-auto-restarted" when crashed citizen is restarted', function( done ){
-
-      this.timeout( 10000 );
-
-      var name = 'one-time-crasher',
-          detected_crash = false;
-
-      supervisor.noticeboard.once( name + '-auto-restarted', 'do-assertions', function( msg ){
-
-        detected_crash = true;
-        assert.equal( detected_crash, true, 'did not detect specific citizen auto-restart' );
-        done();
-      });
-
-      supervisor.start( name, './test/citizen/one-time-crasher', { retries: 1 } );
-    });
-
-    it('sends notice "citizen-auto-restarted" when any crashed citizen is restarted', function( done ){
-
-      this.timeout( 5000 );
-      
-      var first_citizen_name = 'first-crasher',
-          second_citizen_name = 'second-crasher',
-          restarts_detected = 0;
-
-      supervisor.noticeboard.watch( 'citizen-auto-restarted', 'do-assertions', function( msg ){
-
-        restarts_detected += 1;
-
-        if( restarts_detected < 2 ) return;
-
-        assert.equal( restarts_detected === 2, true, 'did not detect all citizen restarts' );        
-        done();
-      });
-
-      supervisor.start( first_citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
-      supervisor.start( second_citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
-    });
   });
 
   describe('Citizen Properties', function(){
@@ -725,18 +656,24 @@ describe('Supe Test Suite', function(){
     });
 
     it('will automatically restart a crashed citizen', function( done ){
-
       this.timeout( 10000 );
 
       var citizen_name = 'crasher';
 
-      supervisor.noticeboard.once( citizen_name + '-auto-restarted', 'do-assertions', function( msg ){
-
+      supervisor.hook.add( citizen_name + '-auto-restarted', 'do-assertions', function( msg ){
         var details = msg.notice,
             citizen = supervisor.get( citizen_name );
 
+        supervisor.hook.del( citizen_name + '-auto-restarted', 'do-assertions' );
+
         assert.equal( citizen.ref && citizen.ref.stdout && citizen.ref instanceof require('events'), true, 'restarted citizen does not have reference to valid child process' );
-        done();
+
+        // cleanup
+          supervisor.hook.add( citizen_name + '-stopped', 'end test', function(){
+            done();
+          });
+
+          supervisor.stop( citizen_name );
       });
 
       supervisor.start( citizen_name, './test/citizen/one-time-crasher', { retries: 1 });
@@ -749,17 +686,16 @@ describe('Supe Test Suite', function(){
           max_restarts = 2,
           restarts = 0;
 
-      supervisor.noticeboard.watch( citizen_name + '-auto-restarted', 'count-auto-restarts', function(){
+      supervisor.hook.add( citizen_name + '-auto-restarted', 'count-auto-restarts', function(){
         restarts += 1;
 
         if( restarts > max_restarts ) done( new Error( 'restarted citizen more than permitted amount of times' ) );
       });
 
-      supervisor.noticeboard.watch( citizen_name + '-excessive-crash', 'do-assertions', function(){
+      supervisor.hook.add( citizen_name + '-excessive-crash', 'do-assertions', function(){
 
         // wait a second before doing assertions, just in case
           setTimeout( function(){
-
             assert.equal( restarts === max_restarts, true, 'current restarts does not match max allowed restarts' );
             done();
           }, 1000 );
@@ -792,11 +728,13 @@ describe('Supe Test Suite', function(){
           message = 'CRASH',
           citizen; 
 
-      supervisor.noticeboard.once( name + '-crashed', 'do-assertions', function( msg ){
+      supervisor.hook.add( name + '-crashed', 'do-assertions', function(){
+        supervisor.hook.del( name + '-crashed', 'do-assertions' );
 
         assert.equal( citizen.state.current_mail === null, true, 'citizen should not have current mail in its state' );
         assert.equal( citizen.mail.inbox.length === 1, true, 'inbox does not contain expected amount of mail' );
         assert.equal( citizen.mail.inbox[0].msg === message, true, 'content of message on queue does not match sent message' );
+
         done();
       });
 
@@ -813,11 +751,13 @@ describe('Supe Test Suite', function(){
           message = 'SHUTDOWN',
           citizen; 
 
-      supervisor.noticeboard.once( name + '-shutdown', 'do-assertions', function( msg ){
+      supervisor.hook.add( name + '-shutdown', 'do-assertions', function( msg ){
+        supervisor.hook.del( name + '-shutdown', 'do-assertions' );
 
         assert.equal( citizen.state.current_mail === null, true, 'citizen should not have current mail in its state' );
         assert.equal( citizen.mail.inbox.length === 1, true, 'inbox does not contain expected amount of mail' );
         assert.equal( citizen.mail.inbox[0].msg === message, true, 'content of message on queue does not match sent message' );
+
         done();
       });
 
@@ -873,10 +813,13 @@ describe('Supe Test Suite', function(){
               processed = received_at - paused_at;
 
           assert.equal( processed >= pause_duration_ms, true, 'mail was processed in ' + processed + 'ms but pause duration is ' + pause_duration_ms + 'ms' );          
-          done();
 
           // cleanup
-            citizen.ref.kill();
+            supervisor.hook.add( name + '-stopped', 'end', function(){
+              done();
+            });
+
+            supervisor.stop( name );
         }
       });
 
@@ -977,7 +920,8 @@ describe('Supe Test Suite', function(){
 
       supervisor.noticeboard.notify( sample_notice, 42 );
 
-      supervisor.noticeboard.once( 'double-piper-crashed', 'fail-test', function(){
+      supervisor.hook.add( 'double-piper-crashed', 'fail-test', function(){
+        supervisor.hook.del( 'double-piper-crashed', 'fail-test' );
         failed = true;
       });
 

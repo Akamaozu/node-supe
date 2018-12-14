@@ -1,6 +1,6 @@
-var supe = require('../../index');
+var citizen = require('../../index');
 
-supe.mail.receive( function( envelope, ack ){
+citizen.hook.add( 'citizen-mail', 'handle-key-analysis', function( envelope, ack ){
   var key = envelope.msg,
       res = { type: 'key-analysis', key: key, success: true };
 
@@ -8,24 +8,26 @@ supe.mail.receive( function( envelope, ack ){
     if( typeof key !== 'string' ){
       res.success = false;
       res.error = 'key given is not a string';
-      supe.mail.send( res );
+      citizen.mail.send( res );
       return ack();
     }
 
-  res.exists = supe.hasOwnProperty( key );
+  res.exists = citizen.hasOwnProperty( key );
 
   // bail if key doesn't exist
-    if( !res.exists ){
-      supe.mail.send( res );
+    if( ! res.exists ){
+      citizen.mail.send( res );
       return ack();
     }
 
-  res.typeof = typeof supe[ key ];
-  res.tostring = Object.prototype.toString.call( supe[ key ] );
+  res.typeof = typeof citizen[ key ];
+  res.tostring = Object.prototype.toString.call( citizen[ key ] );
 
-  supe.mail.send( res );
-  return ack();
+  citizen.mail.send( res );
+  ack();
 });
+
+citizen.mail.receive();
 
 // wait ten secs before shutting down
   setTimeout( process.exit, 10000 );
