@@ -828,6 +828,46 @@ describe('Supe Test Suite', function(){
       citizen.mail.send( 'PAUSE' );
       citizen.mail.send( 'do assertions' );
     });
+
+    it('can process mail asynchronously', function( done ){
+      this.timeout( 10000 );
+
+      var name = 'async-mail-handler',
+          async_mail_handled;
+
+      supervisor.hook.add( 'citizen-signal', 'detect-unhandled-mail', function( envelope ){
+        if( typeof async_mail_handled != 'undefined' ) return;
+
+        var citizen_name = envelope.from;
+        if( citizen_name != name ) return;
+        if( envelope.signal != 'UNHANDLED-MAIL' ) return;
+
+        async_mail_handled = false;
+
+        do_assertions();
+      });
+
+      supervisor.hook.add( 'citizen-signal', 'detect-acked-mail', function( envelope ){
+        if( typeof async_mail_handled != 'undefined' ) return;
+
+        var citizen_name = envelope.from;
+        if( citizen_name != name ) return;
+        if( envelope.signal != 'ACK-CURRENT-MAIL' ) return;
+
+        async_mail_handled = true;
+
+        do_assertions();
+      });
+
+      var citizen = supervisor.start( name, './test/citizen/async-mail-handler', { retries: 0 });
+
+      citizen.mail.send( 'async mail' );
+
+      function do_assertions(){
+        assert.equal( async_mail_handled, true, 'async mail was not handled' );
+        done();
+      }
+    });
   });
 
   describe('Citizen Noticeboard Integration', function(){
