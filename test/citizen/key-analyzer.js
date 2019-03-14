@@ -1,7 +1,8 @@
 var citizen = require('../../index');
 
-citizen.hook.add( 'citizen-mail', 'handle-key-analysis', function( envelope, ack ){
-  var key = envelope.msg,
+citizen.hook.add( 'citizen-mail', 'handle-key-analysis', function( envelope, handle_mail ){
+  var ack = handle_mail(),
+      key = envelope.msg,
       res = { type: 'key-analysis', key: key, success: true };
 
   // bail if key is not a string

@@ -767,10 +767,11 @@ describe('Supe Test Suite', function(){
     });
 
     it('will cache citizen notices', function( done ){
+      this.timeout( 8888 );
 
       supervisor.start( 'notice-sender', './test/citizen/notice-sender' );
 
-      setTimeout( check_cache_for_citizen_notice, 888 );
+      var cache_checker = setInterval( check_cache_for_citizen_notice, 888 );
 
       function check_cache_for_citizen_notice(){
         var notice_cache = supervisor.noticeboard.cache[ 'sample-notice-from-citizen' ];
@@ -778,6 +779,7 @@ describe('Supe Test Suite', function(){
         if( ! notice_cache ) return;
         if( notice_cache !== 'hello supervisor' ) return;
 
+        clearInterval( cache_checker );
         done();
       }
     });
@@ -865,7 +867,12 @@ describe('Supe Test Suite', function(){
 
       function do_assertions(){
         assert.equal( async_mail_handled, true, 'async mail was not handled' );
-        done();
+
+        supervisor.hook.add( name + '-stopped', 'continue-tests', function(){
+          done();
+        });
+
+        supervisor.stop( name );
       }
     });
   });
