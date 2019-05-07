@@ -6,6 +6,7 @@
   "dependencies": {
     "cjs-noticeboard": "0.0.7",
     "cjs-sync-hooks": "0.1.1",
+    "cjs-yield": "^1.0.1",
     "merge-objects": "1.0.5",
     "require-directory": "2.1.1"
   },
