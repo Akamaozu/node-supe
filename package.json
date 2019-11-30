@@ -1,6 +1,6 @@
 {
   "name": "supe",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Flexible Framework for Fault-Tolerant Node.js Apps",
   "main": "index.js",
   "dependencies": {
