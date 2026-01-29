@@ -18,7 +18,7 @@ citizen.hook.add( 'citizen-mail', 'handle-pause-requests', function( envelope, h
 citizen.hook.add( 'citizen-mail', 'handle-nonpause-requests', function( envelope, handle_mail ){
   var ack = handle_mail();
 
-  citizen.mail.send({ received: envelope.msg });
+  citizen.mail.send({ received: envelope.msg, received_at: Date.now() });
   ack();
 });
 

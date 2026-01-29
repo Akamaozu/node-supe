@@ -836,7 +836,7 @@ describe('Supe Test Suite', function(){
         }
 
         if( content.received === 'do assertions' ){
-          var received_at = Date.now(),
+          var received_at = content.received_at,
               processed = received_at - paused_at;
 
           assert.equal( processed >= pause_duration_ms, true, 'mail was processed in ' + processed + 'ms but pause duration is ' + pause_duration_ms + 'ms' );          
