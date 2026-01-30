@@ -2,7 +2,8 @@ sudo: false
 language: node_js
 node_js:
   - 'node'
+  - '12'
   - '8'
   - '6'
 after_success:
-  - npm run lcov-to-coveralls
+  - npm run test:coveralls
