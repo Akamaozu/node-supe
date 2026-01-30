@@ -311,7 +311,10 @@ describe('Supe Test Suite', function(){
           test_completed = true;
 
           assert.equal( new_citizen_started, false, 'restarted currently-running process' );
+
           done();
+
+          supervisor.stop( 'logger' );
         }
       });
     });
@@ -621,6 +624,10 @@ describe('Supe Test Suite', function(){
       key_analyzer = supervisor.start( 'key-analyzer', './test/citizen/key-analyzer' );
     });
 
+    afterEach( function() {
+      supervisor.stop( key_analyzer.name );
+    });
+
     it( 'has its own "get_name" function', function( done ){
       this.timeout( 5000 );
 
@@ -638,7 +645,10 @@ describe('Supe Test Suite', function(){
 
         assert.equal( analysis.exists, true, '"' + key + '" does not exist on citizen supe instance' );
         assert.equal( analysis.typeof, expected_typeof, '"' + key + '" is not a ' + expected_typeof );
+
         done();
+
+        supervisor.stop( 'key-analyzer' );
       });
 
       key_analyzer.mail.send( key );
@@ -693,11 +703,20 @@ describe('Supe Test Suite', function(){
       });
 
       supervisor.hook.add( citizen_name + '-excessive-crash', 'do-assertions', function(){
+        supervisor.hook.del( citizen_name + '-excessive-crash', 'do-assertions' );
 
         // wait a second before doing assertions, just in case
           setTimeout( function(){
             assert.equal( restarts === max_restarts, true, 'current restarts does not match max allowed restarts' );
+
             done();
+
+            // dirty hack:
+            // currently no api available to reset / clear timers responsible for managing citizen restart counts
+            // supe.stop will clear the timers, but the citizen is not runni9ng after excessive crash
+            // temp solution: start the citizen then stop it to handle cleanup properly
+            supervisor.start( citizen_name );
+            supervisor.stop( citizen_name );
           }, 1000 );
       });
 
@@ -714,6 +733,9 @@ describe('Supe Test Suite', function(){
         if( envelope.msg.received_mail_from !== 'routed-mail-sender' ) return;
 
         done();
+
+        supervisor.stop( 'routed-mail-receiver' );
+        supervisor.stop( 'routed-mail-sender' );
       });
 
       supervisor.start( 'routed-mail-receiver', './test/citizen/routed-mail-receiver' );
@@ -779,8 +801,11 @@ describe('Supe Test Suite', function(){
         if( ! notice_cache ) return;
         if( notice_cache !== 'hello supervisor' ) return;
 
-        clearInterval( cache_checker );
         done();
+
+        clearInterval( cache_checker );
+
+        supervisor.stop( 'notice-sender' );
       }
     });
   });
@@ -811,7 +836,7 @@ describe('Supe Test Suite', function(){
         }
 
         if( content.received === 'do assertions' ){
-          var received_at = Date.now(),
+          var received_at = content.received_at,
               processed = received_at - paused_at;
 
           assert.equal( processed >= pause_duration_ms, true, 'mail was processed in ' + processed + 'ms but pause duration is ' + pause_duration_ms + 'ms' );          
@@ -988,6 +1013,7 @@ describe('Supe Test Suite', function(){
 
       supervisor.noticeboard.watch( 'sample-notice-from-citizen', 'do-assertions', function( msg ){
         done();
+        supervisor.stop( 'notice-sender' );
       });
 
       supervisor.start( 'notice-sender', './test/citizen/notice-sender', { retries: 0 });
@@ -1023,7 +1049,11 @@ describe('Supe Test Suite', function(){
           break;
         }
 
-        if( payload_matches_cache ) done();
+        if( !payload_matches_cache ) return;
+
+        done();
+
+        supervisor.stop( 'cache-accesser' );
       }
     });
   });
