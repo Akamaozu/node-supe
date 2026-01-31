@@ -17,7 +17,7 @@
   },
   "scripts": {
     "test": "c8 mocha",
-    "test:coveralls": "c8 report --reporter=text-lcov | coveralls"
+    "test:coverage:report": "c8 report --reporter=text-lcov | coveralls"
   },
   "repository": {
     "type": "git",
