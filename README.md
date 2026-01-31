@@ -1,7 +1,7 @@
 # Supe
 ## Fault-Tolerant Node.js Programs
 
-[![npm version](https://badge.fury.io/js/supe.svg)](https://badge.fury.io/js/supe) [![travis ci](https://travis-ci.org/Akamaozu/node-supe.svg?branch=master)](https://travis-ci.org/Akamaozu/node-supe) [![Coverage Status](https://coveralls.io/repos/github/Akamaozu/node-supe/badge.svg?branch=master)](https://coveralls.io/github/Akamaozu/node-supe?branch=master)
+[![npm version](https://badge.fury.io/js/supe.svg)](https://badge.fury.io/js/supe) [![Tests](https://github.com/Akamaozu/node-supe/actions/workflows/run-tests-and-report-coverage.yml/badge.svg?branch=master)](https://github.com/Akamaozu/node-supe/actions/workflows/run-tests-and-report-coverage.yml) [![Test Coverage](https://coveralls.io/repos/github/Akamaozu/node-supe/badge.svg?branch=master)](https://coveralls.io/github/Akamaozu/node-supe?branch=master)
 
 Node.js makes it easy (and quick) to write a useful program. **Supe is a two-pronged approach to writing safer Node.js programs**.
 
